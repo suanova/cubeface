@@ -1,0 +1,197 @@
+# Default values for cubeface-chart.
+#
+# CubeFace is a single Go binary with the React frontend embedded. The chart
+# runs one container and needs no Redis. Choose a database:
+#   sqlite   : a PersistentVolume mounted at /data (single replica only)
+#   postgres : an external PostgreSQL reachable through SQL_DSN (can scale)
+#
+# See README.md for install examples, OAuth callbacks and upgrade notes.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # Build and push the image from this repository, or point this at your own
+  # registry. An empty tag follows .Chart.AppVersion.
+  repository: ghcr.io/cubeface/cubeface
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Keep at 1 with SQLite: a SQLite file cannot be shared between pods. The
+# chart rejects replicaCount > 1 unless database.mode=postgres.
+replicaCount: 1
+
+# ---------------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------------
+database:
+  mode: sqlite # sqlite | postgres
+  postgres:
+    # Full libpq DSN, e.g. postgres://user:pass@db.example.com:5432/cubeface?sslmode=require
+    # Stored in the chart-created Secret, never in the ConfigMap.
+    # Ignored when secret.create=false: put SQL_DSN in secret.existingSecret.
+    dsn: ""
+    # Block pod startup until the DSN accepts connections (psql "SELECT 1").
+    waitForPostgres: true
+    waitImage: postgres:17-alpine
+
+# Used only with database.mode=sqlite. The volume is mounted at /data and the
+# database lives at /data/cubeface.db.
+persistence:
+  enabled: true
+  # Keep the PVC when the release is uninstalled. Set false for throwaway
+  # environments; retained data must be deleted manually.
+  retain: true
+  size: 1Gi
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  # Use a pre-created PVC instead of rendering one. It must be writable by the
+  # container user and mounted at /data.
+  existingClaim: ""
+
+# ---------------------------------------------------------------------------
+# Application environment (ConfigMap, injected via envFrom)
+#
+# APP_ENV is always production in this chart. Secrets (session/OAuth/SMTP/
+# admin password) live under `secrets` below, never here.
+# ---------------------------------------------------------------------------
+config:
+  PORT: "3000"
+  # URL path prefix, e.g. "/cubeface". The Ingress publishes this exact prefix;
+  # no rewrite is applied. Empty means the site root.
+  BASE_PATH: ""
+  # Browser-visible origin. Empty means: https://<first ingress host> when the
+  # Ingress is enabled, otherwise http://localhost:<PORT>. It MUST match the
+  # address users type in the browser: login POSTs are origin-checked and OAuth
+  # callbacks redirect here.
+  PUBLIC_ORIGIN: ""
+  SYSTEM_NAME: CubeFace
+
+  REGISTER_ENABLED: "true"
+  # Registration email verification is off by default so a fresh install needs
+  # no SMTP. Turn it on together with SMTP_HOST/SMTP_USERNAME and
+  # secrets.SMTP_PASSWORD.
+  EMAIL_VERIFICATION_ENABLED: "false"
+  EMAIL_DEBUG_MODE: "false"
+  ALLOW_EMAIL_DEBUG_IN_PRODUCTION: "false"
+
+  # Empty means auto: true for an https PUBLIC_ORIGIN, false for http (so
+  # port-forward over http still works). Set explicitly to override.
+  SESSION_COOKIE_SECURE: ""
+  SESSION_TTL_DAYS: "30"
+  SESSION_TOUCH_INTERVAL_SECONDS: "3600"
+
+  # Comma-separated proxy CIDRs. Behind ingress-nginx, set this to the pod/
+  # node CIDR so per-IP rate limits see the real client address.
+  TRUSTED_PROXIES: ""
+
+  SMTP_HOST: ""
+  SMTP_PORT: "465"
+  SMTP_TLS_MODE: implicit # implicit | starttls | none
+  SMTP_FROM: "CubeFace <no-reply@cubeface.local>"
+  SMTP_USERNAME: ""
+
+  # OAuth providers appear on the sign-in page only when their client ID and
+  # secret are both set. Callback URL:
+  #   ${PUBLIC_ORIGIN}${BASE_PATH}/api/oauth/<provider>/callback
+  GITHUB_CLIENT_ID: ""
+  GOOGLE_CLIENT_ID: ""
+  OIDC_ISSUER_URL: ""
+  OIDC_CLIENT_ID: ""
+  OIDC_DISPLAY_NAME: SSO
+  OIDC_SCOPES: openid email profile
+
+  # Optional one-time bootstrap of a root account. The password is in
+  # secrets.INITIAL_ADMIN_PASSWORD. Leave empty to skip.
+  INITIAL_ADMIN_USERNAME: ""
+  INITIAL_ADMIN_EMAIL: ""
+
+  # Additional plain environment variables (name: value). Do not put secrets
+  # here and do not duplicate the keys managed above.
+  extra: {}
+
+# ---------------------------------------------------------------------------
+# Secret
+# create=true  : the chart creates the Secret; empty secrets.* values are
+#                generated (SESSION_SECRET) or left empty.
+# create=false : use a pre-created Secret. It must contain SESSION_SECRET and,
+#                with database.mode=postgres, SQL_DSN. Other keys are optional.
+# ---------------------------------------------------------------------------
+secret:
+  create: true
+  existingSecret: ""
+
+secrets:
+  # Generated with 48 random characters when empty and secret.create=true.
+  # Keep it stable across upgrades; rotating it signs everyone out.
+  SESSION_SECRET: ""
+  SMTP_PASSWORD: ""
+  GITHUB_CLIENT_SECRET: ""
+  GOOGLE_CLIENT_SECRET: ""
+  OIDC_CLIENT_SECRET: ""
+  INITIAL_ADMIN_PASSWORD: ""
+
+# ---------------------------------------------------------------------------
+# Service / Ingress
+# ---------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  # Hostnames only, without scheme. With BASE_PATH set, the Ingress routes that
+  # prefix and the app serves it as-is.
+  hosts: []
+  tls:
+    # Set true together with secretName (or a cert-manager annotation that
+    # populates it). TLS is also what makes PUBLIC_ORIGIN default to https and
+    # the session cookie Secure.
+    enabled: false
+    secretName: ""
+
+# Only rendered when replicaCount > 1: minAvailable=1 would block eviction of a
+# single-replica deployment.
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Soft anti-affinity for multi-replica PostgreSQL deployments.
+podAntiAffinity: true
+
+podAnnotations: {}
+podLabels: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+# Left empty by default so any image user can be used. A read-only root
+# filesystem works if /data is writable; provide securityContext overrides for
+# your image.
+securityContext: {}
+# The bundled image runs as UID/GID 10001, and fsGroup lets that user write to
+# a freshly provisioned SQLite PVC. Override this if your storage or image uses
+# a different group.
+podSecurityContext:
+  fsGroup: 10001
+
+nodeSelector: {}
+tolerations: []
+
+# Extra env entries: [{name: X, value: "1"}]
+envVars: []
+extraVolumes: []
+extraVolumeMounts: []
+
+command: []
+args: []

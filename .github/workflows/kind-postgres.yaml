@@ -1,0 +1,247 @@
+name: Kubernetes (KinD + PostgreSQL)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "helm/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/kind-postgres.yaml"
+      - ".github/ci/**"
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "web/**"
+      - "main.go"
+  pull_request:
+    paths:
+      - "helm/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/kind-postgres.yaml"
+      - ".github/ci/**"
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+      - "web/**"
+      - "main.go"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kind-postgres-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chart:
+    name: Helm lint & render
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - name: Lint chart
+        run: helm lint helm/cubeface-chart
+
+      - name: Render SQLite with Ingress and base path
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart \
+            --set config.BASE_PATH=/cubeface \
+            --set ingress.enabled=true \
+            --set 'ingress.hosts[0]=models.example.com' \
+            --set ingress.tls.enabled=true \
+            --set ingress.tls.secretName=models-tls \
+            > /dev/null
+
+      - name: Render PostgreSQL with two replicas
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart \
+            --set database.mode=postgres \
+            --set-string 'database.postgres.dsn=postgres://u:p@db.example.com:5432/cubeface?sslmode=require' \
+            --set replicaCount=2 \
+            > /dev/null
+
+      - name: Render with an external Secret
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart \
+            --set secret.create=false \
+            --set secret.existingSecret=cubeface-credentials \
+            > /dev/null
+
+      - name: Reject unsafe configurations
+        run: |
+          set -euo pipefail
+          if helm template invalid helm/cubeface-chart --set replicaCount=2 > /dev/null 2>&1; then
+            echo "expected SQLite with replicaCount=2 to be rejected"
+            exit 1
+          fi
+          if helm template invalid helm/cubeface-chart \
+            --set database.mode=postgres > /dev/null 2>&1; then
+            echo "expected PostgreSQL without a DSN to be rejected"
+            exit 1
+          fi
+          if helm template invalid helm/cubeface-chart \
+            --set config.EMAIL_VERIFICATION_ENABLED=true > /dev/null 2>&1; then
+            echo "expected email verification without SMTP to be rejected"
+            exit 1
+          fi
+
+  kind-postgres:
+    name: Install on KinD with PostgreSQL
+    needs: chart
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cubeface:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: cubeface
+          node_image: kindest/node:v1.31.0
+          wait: 120s
+
+      - name: Load image into KinD
+        run: kind load docker-image cubeface:ci --name cubeface
+
+      - name: Start PostgreSQL
+        run: |
+          set -euo pipefail
+          kubectl create namespace cubeface
+          kubectl apply -f .github/ci/postgres.yaml
+          kubectl -n cubeface rollout status deployment/postgres --timeout=120s
+
+      - name: Install CubeFace chart
+        run: |
+          set -euo pipefail
+          helm install cubeface helm/cubeface-chart \
+            --namespace cubeface \
+            --set image.repository=cubeface \
+            --set-string image.tag=ci \
+            --set image.pullPolicy=Never \
+            --set database.mode=postgres \
+            --set-string 'database.postgres.dsn=postgres://cubeface:cubeface@postgres.cubeface.svc.cluster.local:5432/cubeface?sslmode=disable' \
+            --set config.PUBLIC_ORIGIN=http://localhost:3000 \
+            --wait --timeout 5m
+          kubectl -n cubeface rollout status deployment/cubeface --timeout=120s
+          kubectl -n cubeface get pods -o wide
+
+      - name: Verify the PostgreSQL backend is configured
+        run: |
+          set -euo pipefail
+          # The chart omits SQLITE_PATH in PostgreSQL mode; its presence would
+          # mean the app silently fell back to SQLite.
+          sqlite_path=$(kubectl -n cubeface get configmap cubeface-config -o jsonpath='{.data.SQLITE_PATH}')
+          if [ -n "$sqlite_path" ]; then
+            echo "unexpected SQLITE_PATH=$sqlite_path in PostgreSQL mode"
+            exit 1
+          fi
+          dsn_scheme=$(kubectl -n cubeface get secret cubeface-secret \
+            -o jsonpath='{.data.SQL_DSN}' | base64 --decode | cut -d: -f1)
+          test "$dsn_scheme" = "postgres"
+
+      - name: Verify CubeFace is reachable and uses PostgreSQL
+        run: |
+          set -euo pipefail
+          kubectl -n cubeface port-forward svc/cubeface 3000:80 >/tmp/port-forward.log 2>&1 &
+          echo $! > /tmp/port-forward.pid
+
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "port-forward did not become healthy"
+              cat /tmp/port-forward.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo "health:"
+          curl -fsS http://127.0.0.1:3000/healthz | tee /tmp/health.json
+          jq -e '.status == "ok"' /tmp/health.json >/dev/null
+
+          echo "landing page:"
+          curl -fsS http://127.0.0.1:3000/ | tee /tmp/index.html
+          grep -q '<div id="root"' /tmp/index.html
+          grep -q '<title>CubeFace</title>' /tmp/index.html
+          curl -fsS http://127.0.0.1:3000/sign-in | grep -q '<div id="root"'
+
+          echo "status:"
+          curl -fsS http://127.0.0.1:3000/api/status | tee /tmp/status.json
+          jq -e '.success == true' /tmp/status.json >/dev/null
+
+          echo "register:"
+          curl -fsS -X POST http://127.0.0.1:3000/api/user/register \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: http://localhost:3000' \
+            -d '{"username":"ciuser","email":"ci@example.com","password":"CiPassw0rd"}' \
+            | tee /tmp/register.json
+          jq -e '.success == true and .data.user.username == "ciuser"' /tmp/register.json >/dev/null
+
+          echo "login:"
+          curl -fsS -c /tmp/cookies.txt -X POST http://127.0.0.1:3000/api/user/login \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: http://localhost:3000' \
+            -d '{"username":"ciuser","password":"CiPassw0rd"}' \
+            | tee /tmp/login.json
+          jq -e '.success == true' /tmp/login.json >/dev/null
+
+          echo "self:"
+          curl -fsS -b /tmp/cookies.txt http://127.0.0.1:3000/api/user/self \
+            | tee /tmp/self.json
+          jq -e '.success == true and .data.user.username == "ciuser"' /tmp/self.json >/dev/null
+
+          # Query PostgreSQL directly: the account and its session must be rows
+          # in the external database, not in a local SQLite file.
+          users=$(kubectl -n cubeface exec deployment/postgres -- \
+            psql -U cubeface -d cubeface -tAc "select count(*) from users where username = 'ciuser'")
+          sessions=$(kubectl -n cubeface exec deployment/postgres -- \
+            psql -U cubeface -d cubeface -tAc \
+            "select count(*) from user_sessions where user_id = (select id from users where username = 'ciuser')")
+          echo "postgres users=$users sessions=$sessions"
+          test "$users" = "1"
+          test "$sessions" -ge 1
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          kubectl -n cubeface get all -o wide || true
+          kubectl -n cubeface describe pods || true
+          kubectl -n cubeface logs deployment/cubeface --all-containers --tail=200 || true
+          kubectl -n cubeface logs deployment/postgres --tail=200 || true
+          kubectl -n cubeface get events --sort-by=.lastTimestamp | tail -50 || true
+
+      - name: Stop port-forward
+        if: always()
+        run: |
+          if [ -f /tmp/port-forward.pid ]; then
+            kill "$(cat /tmp/port-forward.pid)" 2>/dev/null || true
+          fi

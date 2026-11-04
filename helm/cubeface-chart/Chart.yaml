@@ -1,0 +1,15 @@
+apiVersion: v2
+name: cubeface-chart
+description: CubeFace model hub (account/auth + landing page) with SQLite or external PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/cubeface/cubeface
+keywords:
+  - cubeface
+  - model-hub
+  - huggingface
+  - modelscope
+maintainers:
+  - name: CubeFace
+    url: https://github.com/cubeface/cubeface

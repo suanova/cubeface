@@ -1,0 +1,40 @@
+{{- include "cubeface.validate" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cubeface.fullname" . }}-config
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+data:
+  APP_ENV: "production"
+  SYSTEM_NAME: {{ .Values.config.SYSTEM_NAME | quote }}
+  PORT: {{ .Values.config.PORT | quote }}
+  BASE_PATH: {{ include "cubeface.basePath" . | quote }}
+  PUBLIC_ORIGIN: {{ include "cubeface.publicOrigin" . | quote }}
+  REGISTER_ENABLED: {{ .Values.config.REGISTER_ENABLED | quote }}
+  EMAIL_VERIFICATION_ENABLED: {{ .Values.config.EMAIL_VERIFICATION_ENABLED | quote }}
+  EMAIL_DEBUG_MODE: {{ .Values.config.EMAIL_DEBUG_MODE | quote }}
+  ALLOW_EMAIL_DEBUG_IN_PRODUCTION: {{ .Values.config.ALLOW_EMAIL_DEBUG_IN_PRODUCTION | quote }}
+  SESSION_COOKIE_SECURE: {{ include "cubeface.sessionCookieSecure" . | quote }}
+  SESSION_TTL_DAYS: {{ .Values.config.SESSION_TTL_DAYS | quote }}
+  SESSION_TOUCH_INTERVAL_SECONDS: {{ .Values.config.SESSION_TOUCH_INTERVAL_SECONDS | quote }}
+  TRUSTED_PROXIES: {{ .Values.config.TRUSTED_PROXIES | quote }}
+  SMTP_HOST: {{ .Values.config.SMTP_HOST | quote }}
+  SMTP_PORT: {{ .Values.config.SMTP_PORT | quote }}
+  SMTP_TLS_MODE: {{ .Values.config.SMTP_TLS_MODE | quote }}
+  SMTP_FROM: {{ .Values.config.SMTP_FROM | quote }}
+  SMTP_USERNAME: {{ .Values.config.SMTP_USERNAME | quote }}
+  GITHUB_CLIENT_ID: {{ .Values.config.GITHUB_CLIENT_ID | quote }}
+  GOOGLE_CLIENT_ID: {{ .Values.config.GOOGLE_CLIENT_ID | quote }}
+  OIDC_ISSUER_URL: {{ .Values.config.OIDC_ISSUER_URL | quote }}
+  OIDC_CLIENT_ID: {{ .Values.config.OIDC_CLIENT_ID | quote }}
+  OIDC_DISPLAY_NAME: {{ .Values.config.OIDC_DISPLAY_NAME | quote }}
+  OIDC_SCOPES: {{ .Values.config.OIDC_SCOPES | quote }}
+  INITIAL_ADMIN_USERNAME: {{ .Values.config.INITIAL_ADMIN_USERNAME | quote }}
+  INITIAL_ADMIN_EMAIL: {{ .Values.config.INITIAL_ADMIN_EMAIL | quote }}
+  {{- if eq (toString (default "sqlite" .Values.database.mode)) "sqlite" }}
+  SQLITE_PATH: "/data/cubeface.db"
+  {{- end }}
+  {{- range $key, $value := .Values.config.extra }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

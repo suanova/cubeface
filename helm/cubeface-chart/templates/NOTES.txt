@@ -1,0 +1,77 @@
+{{- $fullname := include "cubeface.fullname" . -}}
+{{- $base := include "cubeface.basePath" . -}}
+{{- $origin := include "cubeface.publicOrigin" . -}}
+{{- $mode := toString (default "sqlite" .Values.database.mode) -}}
+CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+1. Wait for the pod to become ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ $fullname }}
+
+{{- if .Values.ingress.enabled }}
+
+2. Open {{ $origin }}{{ $base }}
+
+   The Ingress serves everything under the path prefix {{ include "cubeface.ingressPath" . }}.
+   Make sure DNS for {{ first .Values.ingress.hosts }} points at your ingress controller.
+{{- else }}
+
+2. No Ingress is enabled. Use a port-forward (the local port must match
+   config.PORT so the browser origin matches PUBLIC_ORIGIN):
+
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ $fullname }} {{ .Values.config.PORT }}:{{ .Values.service.port }}
+   # then open {{ $origin }}{{ $base }}
+{{- end }}
+
+3. Configuration notes:
+
+{{- if eq $mode "sqlite" }}
+   - Database: SQLite at /data/cubeface.db on PVC {{ .Values.persistence.existingClaim | default (include "cubeface.pvcName" .) }}.
+     SQLite is single-writer, so replicaCount must stay at 1.
+     {{- if .Values.persistence.retain }}
+     The PVC carries helm.sh/resource-policy: keep: `helm uninstall` leaves it
+     (and all user data) in place. Delete it manually only when you mean to.
+     {{- else }}
+     The PVC is deleted together with the release, including all user data.
+     {{- end }}
+{{- else }}
+   - Database: external PostgreSQL. CubeFace runs AutoMigrate on startup, so the
+     DSN user needs CREATE/ALTER privileges on its schema.
+{{- end }}
+{{- if .Values.secret.create }}
+   - The chart generated SESSION_SECRET and stored it in Secret
+     {{ include "cubeface.secretName" . }}. Back it up: losing it invalidates
+     all existing sessions. Set secrets.SESSION_SECRET to manage it yourself.
+{{- else }}
+   - Credentials are read from the pre-existing Secret
+     {{ include "cubeface.secretName" . }}; it must contain SESSION_SECRET{{ if eq $mode "postgres" }} and SQL_DSN{{ end }}.
+{{- end }}
+{{- if eq (toString .Values.config.EMAIL_VERIFICATION_ENABLED) "false" }}
+   - Email verification is DISABLED: the email field is displayed but accounts
+     are created without verifying it. There is no password reset in this release.
+{{- else if eq (toString .Values.config.EMAIL_DEBUG_MODE) "true" }}
+   - Email debug mode is ON: codes are written to pod logs instead of being sent.
+     Do not leave this enabled for real users.
+{{- else }}
+   - Email verification is enabled via SMTP {{ .Values.config.SMTP_HOST }}:{{ .Values.config.SMTP_PORT }}.
+{{- end }}
+{{- if or .Values.config.GITHUB_CLIENT_ID .Values.config.GOOGLE_CLIENT_ID .Values.config.OIDC_CLIENT_ID }}
+   - OAuth callback URLs must be:
+
+{{- if .Values.config.GITHUB_CLIENT_ID }}
+       GitHub: {{ $origin }}{{ $base }}/api/oauth/github/callback
+{{- end }}
+{{- if .Values.config.GOOGLE_CLIENT_ID }}
+       Google: {{ $origin }}{{ $base }}/api/oauth/google/callback
+{{- end }}
+{{- if .Values.config.OIDC_CLIENT_ID }}
+       OIDC:   {{ $origin }}{{ $base }}/api/oauth/oidc/callback
+{{- end }}
+{{- end }}
+
+4. Useful values:
+
+   --set config.BASE_PATH=/cubeface         serve under a path prefix
+   --set config.PUBLIC_ORIGIN=https://...   override the auto-detected origin
+   --set database.mode=postgres             use external PostgreSQL (replicas > 1)
+   --set persistence.storageClassName=...   pick a StorageClass for SQLite data

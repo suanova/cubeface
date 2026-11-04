@@ -1,0 +1,30 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+/bin/
+/cubeface
+/web/dist/
+/web/node_modules/
+/web/.tanstack/
+
+# Local data
+/data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Test / coverage output
+/coverage/
+*.out
+*.test
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp

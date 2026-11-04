@@ -1,0 +1,26 @@
+.git
+.gitignore
+.github/
+.dockerignore
+Dockerfile
+bin/
+helm/
+*.db
+*.db-shm
+*.db-wal
+data/
+coverage/
+.env
+.env.*
+
+web/node_modules/
+web/dist/
+web/.tanstack/
+web/.env
+web/.env.*
+web/coverage/
+
+# Keep the example files in the context for documentation tooling; they are
+# not used by the image build.
+!.env.example
+!web/.env.example

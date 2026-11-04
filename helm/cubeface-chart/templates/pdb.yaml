@@ -1,0 +1,13 @@
+{{- if and .Values.pdb.enabled (gt (int (default 1 .Values.replicaCount)) 1) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "cubeface.fullname" . }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 6 }}
+{{- end }}
