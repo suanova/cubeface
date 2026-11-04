@@ -1,4 +1,4 @@
-name: Kubernetes (KinD + PostgreSQL)
+name: Kubernetes (KinD + CloudNativePG)
 
 on:
   push:
@@ -10,7 +10,6 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".github/workflows/kind-postgres.yaml"
-      - ".github/ci/**"
       - "**/*.go"
       - "go.mod"
       - "go.sum"
@@ -22,7 +21,6 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".github/workflows/kind-postgres.yaml"
-      - ".github/ci/**"
       - "**/*.go"
       - "go.mod"
       - "go.sum"
@@ -52,10 +50,26 @@ jobs:
       - name: Lint chart
         run: helm lint helm/cubeface-chart
 
+      - name: Render the default managed PostgreSQL cluster
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart > /tmp/default.yaml
+          grep -q "kind: Cluster" /tmp/default.yaml
+          grep -q "kind: Deployment" /tmp/default.yaml
+          grep -q "cloudnative-pg" /tmp/default.yaml
+          # The app must consume the generated DSN secret, never a SQLite path.
+          grep -q "cubeface-postgres-dsn" /tmp/default.yaml
+          if grep -q "SQLITE_PATH" /tmp/default.yaml; then
+            echo "unexpected SQLITE_PATH in managed PostgreSQL mode"
+            exit 1
+          fi
+
       - name: Render SQLite with Ingress and base path
         run: |
           set -euo pipefail
           helm template cubeface helm/cubeface-chart \
+            --set database.mode=sqlite \
+            --set database.postgres.operator.install=false \
             --set config.BASE_PATH=/cubeface \
             --set ingress.enabled=true \
             --set 'ingress.hosts[0]=models.example.com' \
@@ -63,12 +77,13 @@ jobs:
             --set ingress.tls.secretName=models-tls \
             > /dev/null
 
-      - name: Render PostgreSQL with two replicas
+      - name: Render external PostgreSQL with two replicas
         run: |
           set -euo pipefail
           helm template cubeface helm/cubeface-chart \
-            --set database.mode=postgres \
-            --set-string 'database.postgres.dsn=postgres://u:p@db.example.com:5432/cubeface?sslmode=require' \
+            --set database.mode=external \
+            --set database.postgres.operator.install=false \
+            --set-string 'database.external.dsn=postgres://u:p@db.example.com:5432/cubeface?sslmode=require' \
             --set replicaCount=2 \
             > /dev/null
 
@@ -76,33 +91,45 @@ jobs:
         run: |
           set -euo pipefail
           helm template cubeface helm/cubeface-chart \
+            --set database.postgres.operator.install=false \
             --set secret.create=false \
             --set secret.existingSecret=cubeface-credentials \
             > /dev/null
 
+      - name: Render backups and the PgBouncer pooler
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart \
+            --set database.postgres.operator.install=false \
+            --set database.postgres.backups.enabled=true \
+            --set database.postgres.pgBouncer.enabled=true \
+            > /tmp/features.yaml
+          grep -q "kind: ScheduledBackup" /tmp/features.yaml
+          grep -q "kind: Pooler" /tmp/features.yaml
+
       - name: Reject unsafe configurations
         run: |
           set -euo pipefail
-          if helm template invalid helm/cubeface-chart --set replicaCount=2 > /dev/null 2>&1; then
-            echo "expected SQLite with replicaCount=2 to be rejected"
-            exit 1
-          fi
-          if helm template invalid helm/cubeface-chart \
-            --set database.mode=postgres > /dev/null 2>&1; then
-            echo "expected PostgreSQL without a DSN to be rejected"
-            exit 1
-          fi
-          if helm template invalid helm/cubeface-chart \
-            --set config.EMAIL_VERIFICATION_ENABLED=true > /dev/null 2>&1; then
-            echo "expected email verification without SMTP to be rejected"
-            exit 1
-          fi
+          reject() {
+            if helm template invalid helm/cubeface-chart "$@" > /dev/null 2>&1; then
+              echo "expected this configuration to be rejected: $*"
+              exit 1
+            fi
+          }
+          reject --set database.mode=sqlite --set database.postgres.operator.install=false --set replicaCount=2
+          reject --set database.mode=external --set database.postgres.operator.install=false
+          reject --set database.mode=bogus
+          reject --set database.postgres.auth.username=Bad-User
+          reject --set database.postgres.instances=0
+          reject --set-string secrets.POSTGRES_PASSWORD='p@ss'
+          reject --set database.postgres.backups.enabled=true --set database.postgres.backups.method=fileArchiving
+          reject --set config.EMAIL_VERIFICATION_ENABLED=true
 
   kind-postgres:
-    name: Install on KinD with PostgreSQL
+    name: Install on KinD with HA CloudNativePG
     needs: chart
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -130,41 +157,53 @@ jobs:
       - name: Load image into KinD
         run: kind load docker-image cubeface:ci --name cubeface
 
-      - name: Start PostgreSQL
+      - name: Install CubeFace with its managed PostgreSQL cluster
         run: |
           set -euo pipefail
           kubectl create namespace cubeface
-          kubectl apply -f .github/ci/postgres.yaml
-          kubectl -n cubeface rollout status deployment/postgres --timeout=120s
-
-      - name: Install CubeFace chart
-        run: |
-          set -euo pipefail
           helm install cubeface helm/cubeface-chart \
             --namespace cubeface \
             --set image.repository=cubeface \
             --set-string image.tag=ci \
             --set image.pullPolicy=Never \
-            --set database.mode=postgres \
-            --set-string 'database.postgres.dsn=postgres://cubeface:cubeface@postgres.cubeface.svc.cluster.local:5432/cubeface?sslmode=disable' \
             --set config.PUBLIC_ORIGIN=http://localhost:3000 \
-            --wait --timeout 5m
-          kubectl -n cubeface rollout status deployment/cubeface --timeout=120s
+            --set database.postgres.instances=3 \
+            --set database.postgres.resources.requests.cpu=100m \
+            --set database.postgres.resources.requests.memory=256Mi \
+            --set database.postgres.resources.limits.cpu=1 \
+            --set database.postgres.resources.limits.memory=1Gi \
+            --timeout 15m
+          # The app pod waits for the CNPG primary in its init container, so
+          # this also covers the first bootstrap of a 3-instance cluster.
+          kubectl -n cubeface rollout status deployment/cubeface --timeout=10m
           kubectl -n cubeface get pods -o wide
 
-      - name: Verify the PostgreSQL backend is configured
+      - name: Verify the HA PostgreSQL cluster is ready
         run: |
           set -euo pipefail
-          # The chart omits SQLITE_PATH in PostgreSQL mode; its presence would
-          # mean the app silently fell back to SQLite.
+          kubectl -n cubeface wait --for=condition=Ready cluster/cubeface-postgres --timeout=10m
+          instances=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.instances}')
+          ready=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.readyInstances}')
+          primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
+          echo "instances=$instances ready=$ready primary=$primary"
+          test "$instances" = "3"
+          test "$ready" = "3"
+          test -n "$primary"
+          pods=$(kubectl -n cubeface get pods -l cnpg.io/cluster=cubeface-postgres --no-headers | wc -l)
+          test "$pods" = "3"
+
+      - name: Verify the app uses the managed PostgreSQL cluster
+        run: |
+          set -euo pipefail
           sqlite_path=$(kubectl -n cubeface get configmap cubeface-config -o jsonpath='{.data.SQLITE_PATH}')
-          if [ -n "$sqlite_path" ]; then
-            echo "unexpected SQLITE_PATH=$sqlite_path in PostgreSQL mode"
-            exit 1
-          fi
-          dsn_scheme=$(kubectl -n cubeface get secret cubeface-secret \
-            -o jsonpath='{.data.SQL_DSN}' | base64 --decode | cut -d: -f1)
-          test "$dsn_scheme" = "postgres"
+          test -z "$sqlite_path"
+          dsn=$(kubectl -n cubeface get secret cubeface-postgres-dsn -o jsonpath='{.data.SQL_DSN}' | base64 --decode)
+          echo "dsn host: $(printf '%s' "$dsn" | sed -E 's#^[^@]*@##; s#/.*##')"
+          printf '%s' "$dsn" | grep -q '^postgresql://'
+          printf '%s' "$dsn" | grep -q '@cubeface-postgres-rw:5432/cubeface?sslmode=require'
+          wait_image=$(kubectl -n cubeface get deployment cubeface -o jsonpath='{.spec.template.spec.initContainers[0].image}')
+          echo "wait-for-postgres image: $wait_image"
+          printf '%s' "$wait_image" | grep -q 'cloudnative-pg/postgresql'
 
       - name: Verify CubeFace is reachable and uses PostgreSQL
         run: |
@@ -219,24 +258,75 @@ jobs:
             | tee /tmp/self.json
           jq -e '.success == true and .data.user.username == "ciuser"' /tmp/self.json >/dev/null
 
-          # Query PostgreSQL directly: the account and its session must be rows
-          # in the external database, not in a local SQLite file.
-          users=$(kubectl -n cubeface exec deployment/postgres -- \
-            psql -U cubeface -d cubeface -tAc "select count(*) from users where username = 'ciuser'")
-          sessions=$(kubectl -n cubeface exec deployment/postgres -- \
-            psql -U cubeface -d cubeface -tAc \
-            "select count(*) from user_sessions where user_id = (select id from users where username = 'ciuser')")
+          # Query the primary directly: the account and its session must be
+          # rows in the CNPG cluster, not in a local SQLite file.
+          primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
+          users=$(kubectl -n cubeface exec "$primary" -c postgres -- \
+            psql -U postgres -d cubeface -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
+          sessions=$(kubectl -n cubeface exec "$primary" -c postgres -- \
+            psql -U postgres -d cubeface -tAc \
+            "select count(*) from user_sessions where user_id = (select id from users where username = 'ciuser')" | tr -d '[:space:]')
           echo "postgres users=$users sessions=$sessions"
           test "$users" = "1"
           test "$sessions" -ge 1
+
+      - name: Fail over the primary and verify CubeFace recovers
+        run: |
+          set -euo pipefail
+          old_primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
+          echo "deleting primary pod $old_primary"
+          kubectl -n cubeface delete pod "$old_primary" --wait=false
+
+          new_primary=""
+          for i in $(seq 1 120); do
+            new_primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+            if [ -n "$new_primary" ] && [ "$new_primary" != "$old_primary" ]; then
+              break
+            fi
+            sleep 2
+          done
+          echo "new primary: ${new_primary:-<none>}"
+          test -n "$new_primary"
+          test "$new_primary" != "$old_primary"
+
+          for i in $(seq 1 150); do
+            ready=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.readyInstances}' 2>/dev/null || true)
+            if [ "$ready" = "3" ]; then
+              break
+            fi
+            if [ "$i" -eq 150 ]; then
+              echo "cluster did not return to 3 ready instances"
+              kubectl -n cubeface get cluster cubeface-postgres -o yaml
+              exit 1
+            fi
+            sleep 2
+          done
+
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "CubeFace did not recover after the PostgreSQL failover"
+              cat /tmp/port-forward.log || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          users=$(kubectl -n cubeface exec "$new_primary" -c postgres -- \
+            psql -U postgres -d cubeface -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
+          echo "postgres users after failover=$users"
+          test "$users" = "1"
 
       - name: Dump diagnostics on failure
         if: failure()
         run: |
           kubectl -n cubeface get all -o wide || true
+          kubectl -n cubeface get cluster -o yaml || true
           kubectl -n cubeface describe pods || true
           kubectl -n cubeface logs deployment/cubeface --all-containers --tail=200 || true
-          kubectl -n cubeface logs deployment/postgres --tail=200 || true
+          kubectl -n cubeface logs deployment/cubeface-cloudnative-pg --tail=200 || true
           kubectl -n cubeface get events --sort-by=.lastTimestamp | tail -50 || true
 
       - name: Stop port-forward

@@ -32,7 +32,7 @@ data:
   OIDC_SCOPES: {{ .Values.config.OIDC_SCOPES | quote }}
   INITIAL_ADMIN_USERNAME: {{ .Values.config.INITIAL_ADMIN_USERNAME | quote }}
   INITIAL_ADMIN_EMAIL: {{ .Values.config.INITIAL_ADMIN_EMAIL | quote }}
-  {{- if eq (toString (default "sqlite" .Values.database.mode)) "sqlite" }}
+  {{- if eq (toString (default "postgres" .Values.database.mode)) "sqlite" }}
   SQLITE_PATH: "/data/cubeface.db"
   {{- end }}
   {{- range $key, $value := .Values.config.extra }}

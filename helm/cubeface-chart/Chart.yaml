@@ -1,15 +1,28 @@
 apiVersion: v2
 name: cubeface-chart
-description: CubeFace model hub (account/auth + landing page) with SQLite or external PostgreSQL
+description: CubeFace model hub (account/auth + landing page) with HA PostgreSQL (CloudNativePG) or SQLite
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "0.1.0"
+kubeVersion: ">=1.29.0-0"
 home: https://github.com/cubeface/cubeface
 keywords:
   - cubeface
   - model-hub
   - huggingface
   - modelscope
+  - postgresql
+  - cloudnative-pg
 maintainers:
   - name: CubeFace
     url: https://github.com/cubeface/cubeface
+dependencies:
+  # Vendored from https://github.com/cloudnative-pg/charts (chart 0.29.0,
+  # operator 1.30.0, Apache-2.0). Installs the CloudNativePG control plane and
+  # its CRDs. The Cluster CR (HA PostgreSQL) is rendered by the parent chart's
+  # templates/postgres-cluster.yaml. Disable with
+  # database.postgres.operator.install=false when the cluster already runs the
+  # operator.
+  - name: cloudnative-pg
+    version: 0.29.0
+    condition: database.postgres.operator.install

@@ -2,8 +2,11 @@
 #
 # CubeFace is a single Go binary with the React frontend embedded. The chart
 # runs one container and needs no Redis. Choose a database:
+#   postgres : HA PostgreSQL managed by CloudNativePG (default) -- the chart
+#              vendors the operator and renders a Cluster CR with streaming
+#              replication and automatic failover
+#   external : an existing PostgreSQL reachable through SQL_DSN
 #   sqlite   : a PersistentVolume mounted at /data (single replica only)
-#   postgres : an external PostgreSQL reachable through SQL_DSN (can scale)
 #
 # See README.md for install examples, OAuth callbacks and upgrade notes.
 
@@ -20,16 +23,85 @@ image:
 imagePullSecrets: []
 
 # Keep at 1 with SQLite: a SQLite file cannot be shared between pods. The
-# chart rejects replicaCount > 1 unless database.mode=postgres.
+# chart rejects replicaCount > 1 in SQLite mode. PostgreSQL modes can scale.
 replicaCount: 1
 
 # ---------------------------------------------------------------------------
 # Database
+#
+#   postgres : HA PostgreSQL managed by CloudNativePG (default). The chart
+#              vendors the CloudNativePG operator subchart and renders a
+#              Cluster CR: one primary plus streaming replicas, automatic
+#              failover and self-signed TLS. Set
+#              database.postgres.operator.install=false when CloudNativePG is
+#              already installed in the cluster.
+#   external : an existing PostgreSQL server reachable through SQL_DSN.
+#   sqlite   : a database file on a PersistentVolume (single replica only).
 # ---------------------------------------------------------------------------
 database:
-  mode: sqlite # sqlite | postgres
+  mode: postgres # postgres | external | sqlite
+
   postgres:
-    # Full libpq DSN, e.g. postgres://user:pass@db.example.com:5432/cubeface?sslmode=require
+    # Install the vendored CloudNativePG operator subchart. Disable it when
+    # the cluster already runs CloudNativePG; the Cluster CR is still
+    # rendered and the operator reconciles it.
+    operator:
+      install: true
+
+    # PostgreSQL instance image for the managed Cluster. The tag encodes the
+    # major version; keep it compatible with the operator version (1.30.0).
+    # The same image is used for the wait-for-postgres init container.
+    image: ghcr.io/cloudnative-pg/postgresql:16.14-system-trixie
+    # >= 2 for HA. 3 is recommended: after a failover the new primary still
+    # has a streaming replica attached.
+    instances: 3
+    storage: 10Gi
+    # Empty uses the cluster default StorageClass.
+    storageClassName: ""
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    auth:
+      # Database and owner role created by bootstrap.initdb.
+      database: cubeface
+      # PostgreSQL identifier (no hyphens): [a-z_][a-z0-9_]* only.
+      username: cubeface
+    # Block pod startup until the primary accepts connections.
+    waitForPostgres: true
+    # Add helm.sh/resource-policy: keep to the Cluster so `helm uninstall`
+    # leaves the database (and its PVCs) intact. Delete the Cluster manually
+    # to destroy data.
+    retain: true
+    # Scheduled backups. method: volumeSnapshot needs the VolumeSnapshot CRDs
+    # and a VolumeSnapshotClass; fileArchiving needs barmanObjectStore.
+    backups:
+      enabled: false
+      schedule: "0 0 2 * * 0"
+      method: volumeSnapshot
+      # barmanObjectStore:
+      #   endpointURL: https://s3.example.com
+      #   destinationPath: s3://bucket/cnpg-backups/
+      #   s3Credentials:
+      #     accessKeyId:
+      #       name: cnpg-backup-s3-creds
+      #       key: ACCESS_KEY_ID
+      #     secretAccessKey:
+      #       name: cnpg-backup-s3-creds
+      #       key: ACCESS_SECRET_KEY
+    # Optional PgBouncer pooler in front of the primary. CubeFace keeps
+    # connecting to the -rw service directly; enable the pooler only if other
+    # clients need it.
+    pgBouncer:
+      enabled: false
+      replicas: 2
+
+  external:
+    # Full libpq DSN, e.g.
+    # postgres://user:pass@db.example.com:5432/cubeface?sslmode=require
     # Stored in the chart-created Secret, never in the ConfigMap.
     # Ignored when secret.create=false: put SQL_DSN in secret.existingSecret.
     dsn: ""
@@ -118,7 +190,9 @@ config:
 # create=true  : the chart creates the Secret; empty secrets.* values are
 #                generated (SESSION_SECRET) or left empty.
 # create=false : use a pre-created Secret. It must contain SESSION_SECRET and,
-#                with database.mode=postgres, SQL_DSN. Other keys are optional.
+#                with database.mode=external, SQL_DSN. Other keys are optional.
+#                In managed PostgreSQL mode the chart still creates its own
+#                app-auth and DSN Secrets.
 # ---------------------------------------------------------------------------
 secret:
   create: true
@@ -128,6 +202,11 @@ secrets:
   # Generated with 48 random characters when empty and secret.create=true.
   # Keep it stable across upgrades; rotating it signs everyone out.
   SESSION_SECRET: ""
+  # Owner password for the managed PostgreSQL cluster (database.mode=postgres).
+  # Generated with 24 random characters when empty and reused across upgrades
+  # via lookup on the "<cluster>-app-auth" secret. Must not contain URI special
+  # characters (@ : / ? # [ ] %) or spaces, because it is embedded in SQL_DSN.
+  POSTGRES_PASSWORD: ""
   SMTP_PASSWORD: ""
   GITHUB_CLIENT_SECRET: ""
   GOOGLE_CLIENT_SECRET: ""
@@ -195,3 +274,22 @@ extraVolumeMounts: []
 
 command: []
 args: []
+
+# ---------------------------------------------------------------------------
+# CloudNativePG operator (vendored subchart, installed when
+# database.postgres.operator.install=true). These values are passed to
+# charts/cloudnative-pg; see that chart's values.yaml for the full list.
+# ---------------------------------------------------------------------------
+cloudnative-pg:
+  image:
+    repository: ghcr.io/cloudnative-pg/cloudnative-pg
+    tag: "1.30.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+

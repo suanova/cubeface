@@ -107,7 +107,7 @@ Go 会在 SPA HTML 中注入 `<base href="/cubeface/">` 和 `window.__BASE_PATH_
 
 ## Kubernetes / Helm
 
-`helm/cubeface-chart` 提供单容器部署：默认使用 PVC 上的 SQLite，也可以连接外部 PostgreSQL 并水平扩容。
+`helm/cubeface-chart` 默认部署一套由 [CloudNativePG](https://cloudnative-pg.io/) 管理的高可用 PostgreSQL：Chart 内嵌 CloudNativePG operator 子 Chart，并渲染 `Cluster` CR（一主多从、流复制、自动故障切换、自签名 TLS）。CubeFace 本身仍是无状态单容器，可随 PostgreSQL 一起扩缩容。
 
 ```bash
 helm install cubeface ./helm/cubeface-chart \
@@ -117,15 +117,31 @@ kubectl -n cubeface port-forward svc/cubeface 3000:80
 # 打开 http://localhost:3000
 ```
 
-Ingress、子路径、PostgreSQL、Secret 管理、邮箱与 OAuth 配置、升级注意事项见 [Chart README](helm/cubeface-chart/README.md)。Chart 默认使用的镜像由仓库根目录的 `Dockerfile` 构建（前端 + 后端多阶段构建，运行用户 UID 10001）。
+默认创建 3 个 PostgreSQL 实例（`database.postgres.instances`）。也可以选择其它数据库后端：
+
+```bash
+# 外部 PostgreSQL（不安装 operator）
+helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace \
+  --set database.mode=external \
+  --set database.postgres.operator.install=false \
+  --set 'database.external.dsn=postgres://user:pass@db.example.com:5432/cubeface?sslmode=require'
+
+# 单副本 SQLite（开发/小规模）
+helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace \
+  --set database.mode=sqlite \
+  --set database.postgres.operator.install=false
+```
+
+Ingress、子路径、PostgreSQL 高可用/备份/PgBouncer、Secret 管理、邮箱与 OAuth 配置、升级注意事项见 [Chart README](helm/cubeface-chart/README.md)。Chart 默认使用的镜像由仓库根目录的 `Dockerfile` 构建（前端 + 后端多阶段构建，运行用户 UID 10001）。
 
 CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-postgres.yaml) 会：
 
-1. `helm lint` 并渲染 SQLite / Ingress / 子路径 / PostgreSQL 多副本 / 外部 Secret 场景，拒绝不安全配置；
+1. `helm lint` 并渲染托管 PostgreSQL、SQLite、外部 DSN、外部 Secret、备份/PgBouncer 场景，拒绝不安全配置；
 2. 构建镜像并加载到 KinD；
-3. 在集群内部署 PostgreSQL；
-4. 以 `database.mode=postgres` 安装 Chart；
-5. 通过 `/healthz`、`/api/status`、注册、登录、`/api/user/self` 验证可访问性，并直接查询 PostgreSQL 确认账号与会话确实写入数据库。
+3. 以 `database.mode=postgres` 安装 Chart，由 Chart 自带的 CloudNativePG operator 创建 3 实例 PostgreSQL 集群；
+4. 通过 `/healthz`、`/api/status`、注册、登录、`/api/user/self` 验证可访问性；
+5. 直接查询 PostgreSQL 主库确认账号与会话确实写入数据库；
+6. 删除主库 Pod 触发自动故障切换，验证新主库选举成功且 CubeFace 恢复服务。
 
 ## 配置说明
 
@@ -207,3 +223,5 @@ make check      # go vet + tsc + tests
 ## 许可证
 
 本仓库以 [MIT](LICENSE) 许可证发布。
+
+`helm/cubeface-chart/charts/cloudnative-pg` 是 [CloudNativePG](https://github.com/cloudnative-pg/charts) 的 vendored 副本，按其自带的 Apache-2.0 许可证分发（见该目录下的 `LICENSE`）。

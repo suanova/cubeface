@@ -1,12 +1,20 @@
 {{- $fullname := include "cubeface.fullname" . -}}
 {{- $base := include "cubeface.basePath" . -}}
 {{- $origin := include "cubeface.publicOrigin" . -}}
-{{- $mode := toString (default "sqlite" .Values.database.mode) -}}
+{{- $mode := toString (default "postgres" .Values.database.mode) -}}
 CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
 
 1. Wait for the pod to become ready:
 
    kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ $fullname }}
+
+{{- if eq $mode "postgres" }}
+
+   The managed PostgreSQL cluster takes a little longer to bootstrap:
+
+   kubectl -n {{ .Release.Namespace }} get cluster {{ include "cubeface.postgresClusterName" . }}
+   kubectl -n {{ .Release.Namespace }} get pods -l cnpg.io/cluster={{ include "cubeface.postgresClusterName" . }}
+{{- end }}
 
 {{- if .Values.ingress.enabled }}
 
@@ -25,7 +33,28 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 
 3. Configuration notes:
 
-{{- if eq $mode "sqlite" }}
+{{- if eq $mode "postgres" }}
+   - Database: CloudNativePG cluster {{ include "cubeface.postgresClusterName" . }}
+     ({{ .Values.database.postgres.instances }} instance(s), writable service
+     {{ include "cubeface.postgresAddr" . }}).
+     {{- if .Values.database.postgres.operator.install }}
+     The vendored CloudNativePG operator was installed with this release.
+     {{- else }}
+     CloudNativePG was assumed to be installed already.
+     {{- end }}
+     Connection credentials are in Secret {{ include "cubeface.postgresAppAuthSecretName" . }};
+     the app DSN is in Secret {{ include "cubeface.postgresDSNSecretName" . }}.
+     {{- if .Values.database.postgres.retain }}
+     The Cluster carries helm.sh/resource-policy: keep: `helm uninstall` leaves
+     the database and its PVCs in place. Delete the Cluster manually only when
+     you mean to destroy all data.
+     {{- else }}
+     The Cluster is deleted together with the release, including all data.
+     {{- end }}
+{{- else if eq $mode "external" }}
+   - Database: external PostgreSQL. CubeFace runs AutoMigrate on startup, so the
+     DSN user needs CREATE/ALTER privileges on its schema.
+{{- else }}
    - Database: SQLite at /data/cubeface.db on PVC {{ .Values.persistence.existingClaim | default (include "cubeface.pvcName" .) }}.
      SQLite is single-writer, so replicaCount must stay at 1.
      {{- if .Values.persistence.retain }}
@@ -34,9 +63,6 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
      {{- else }}
      The PVC is deleted together with the release, including all user data.
      {{- end }}
-{{- else }}
-   - Database: external PostgreSQL. CubeFace runs AutoMigrate on startup, so the
-     DSN user needs CREATE/ALTER privileges on its schema.
 {{- end }}
 {{- if .Values.secret.create }}
    - The chart generated SESSION_SECRET and stored it in Secret
@@ -44,7 +70,7 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
      all existing sessions. Set secrets.SESSION_SECRET to manage it yourself.
 {{- else }}
    - Credentials are read from the pre-existing Secret
-     {{ include "cubeface.secretName" . }}; it must contain SESSION_SECRET{{ if eq $mode "postgres" }} and SQL_DSN{{ end }}.
+     {{ include "cubeface.secretName" . }}; it must contain SESSION_SECRET{{ if eq $mode "external" }} and SQL_DSN{{ end }}.
 {{- end }}
 {{- if eq (toString .Values.config.EMAIL_VERIFICATION_ENABLED) "false" }}
    - Email verification is DISABLED: the email field is displayed but accounts
@@ -73,5 +99,10 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 
    --set config.BASE_PATH=/cubeface         serve under a path prefix
    --set config.PUBLIC_ORIGIN=https://...   override the auto-detected origin
-   --set database.mode=postgres             use external PostgreSQL (replicas > 1)
-   --set persistence.storageClassName=...   pick a StorageClass for SQLite data
+   --set database.mode=sqlite               use a PVC-backed SQLite file instead
+   --set database.mode=external \
+     --set database.external.dsn=...        use an existing PostgreSQL server
+   --set database.postgres.instances=3      PostgreSQL HA size (postgres mode)
+   --set database.postgres.storage=20Gi     PostgreSQL volume size
+   --set database.postgres.operator.install=false
+                                            reuse an existing CloudNativePG operator

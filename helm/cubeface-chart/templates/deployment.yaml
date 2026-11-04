@@ -1,8 +1,12 @@
 {{- $fullname := include "cubeface.fullname" . -}}
 {{- $secretName := include "cubeface.secretName" . -}}
-{{- $mode := toString (default "sqlite" .Values.database.mode) -}}
+{{- $mode := toString (default "postgres" .Values.database.mode) -}}
 {{- $replicas := int (default 1 .Values.replicaCount) -}}
 {{- $isSQLite := eq $mode "sqlite" -}}
+{{- $isManaged := eq $mode "postgres" -}}
+{{- $dsnSecretName := ternary (include "cubeface.postgresDSNSecretName" .) $secretName $isManaged -}}
+{{- $waitForPostgres := and (not $isSQLite) (ternary .Values.database.postgres.waitForPostgres .Values.database.external.waitForPostgres $isManaged) -}}
+{{- $waitImage := ternary .Values.database.postgres.image .Values.database.external.waitImage $isManaged -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -57,16 +61,16 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if and (eq $mode "postgres") .Values.database.postgres.waitForPostgres }}
+      {{- if $waitForPostgres }}
       initContainers:
         - name: wait-for-postgres
-          image: {{ .Values.database.postgres.waitImage | quote }}
+          image: {{ $waitImage | quote }}
           imagePullPolicy: IfNotPresent
           env:
             - name: SQL_DSN
               valueFrom:
                 secretKeyRef:
-                  name: {{ $secretName }}
+                  name: {{ $dsnSecretName }}
                   key: SQL_DSN
           command:
             - /bin/sh
@@ -115,11 +119,11 @@ spec:
                 secretKeyRef:
                   name: {{ $secretName }}
                   key: SESSION_SECRET
-            {{- if eq $mode "postgres" }}
+            {{- if not $isSQLite }}
             - name: SQL_DSN
               valueFrom:
                 secretKeyRef:
-                  name: {{ $secretName }}
+                  name: {{ $dsnSecretName }}
                   key: SQL_DSN
             {{- end }}
             - name: SMTP_PASSWORD

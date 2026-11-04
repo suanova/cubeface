@@ -1,4 +1,4 @@
-{{- if and (eq (toString (default "sqlite" .Values.database.mode)) "sqlite") .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+{{- if and (eq (toString (default "postgres" .Values.database.mode)) "sqlite") .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

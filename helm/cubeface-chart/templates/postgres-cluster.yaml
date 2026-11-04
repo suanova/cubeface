@@ -1,0 +1,103 @@
+{{- $mode := toString (default "postgres" .Values.database.mode) -}}
+{{- if eq $mode "postgres" -}}
+{{- $pg := .Values.database.postgres -}}
+{{- $cluster := include "cubeface.postgresClusterName" . -}}
+{{- $user := toString $pg.auth.username -}}
+{{- $db := toString $pg.auth.database -}}
+{{/*
+CloudNativePG Cluster: HA PostgreSQL managed by the cloudnative-pg operator
+(built-in streaming replication, automatic failover, self-signed TLS).
+
+- bootstrap.initdb creates the app database owned by the app user.
+- bootstrap.initdb.secret points at the "<cluster>-app-auth" basic-auth Secret
+  rendered by secret.yaml: the operator applies that password to the app role
+  and re-applies it whenever the Secret changes, so the chart password is the
+  live database password from first start with no init Job.
+- The writable endpoint is "<cluster>-rw" (see cubeface.postgresAddr).
+  "<cluster>-ro" / "<cluster>-r" / "<cluster>-any" cover read paths.
+*/}}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ $cluster }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+  {{- if $pg.retain }}
+  annotations:
+    # Keep the Cluster (and therefore the PVCs with all user data) when the
+    # release is uninstalled. Delete the Cluster manually to destroy data.
+    helm.sh/resource-policy: keep
+  {{- end }}
+spec:
+  imageName: {{ $pg.image | quote }}
+  imagePullPolicy: IfNotPresent
+  instances: {{ int $pg.instances }}
+  storage:
+    size: {{ $pg.storage | quote }}
+    {{- if $pg.storageClassName }}
+    storageClassName: {{ $pg.storageClassName | quote }}
+    {{- end }}
+  resources:
+    {{- toYaml $pg.resources | nindent 4 }}
+  bootstrap:
+    initdb:
+      database: {{ $db }}
+      owner: {{ $user }}
+      # Credentials for the database owner. The chart renders this Secret, so
+      # the operator never generates a random app password.
+      secret:
+        name: {{ include "cubeface.postgresAppAuthSecretName" . }}
+  # The superuser has no password and is not reachable over TCP.
+  enableSuperuserAccess: false
+  {{- if $pg.backups.enabled }}
+  backup:
+    {{- if eq $pg.backups.method "volumeSnapshot" }}
+    volumeSnapshot: {}
+    {{- else if eq $pg.backups.method "fileArchiving" }}
+    wal:
+      archiving: true
+    barmanObjectStore: {{- toYaml $pg.backups.barmanObjectStore | nindent 6 }}
+    {{- end }}
+  {{- end }}
+{{- if $pg.pgBouncer.enabled }}
+---
+{{/*
+Optional operator-managed PgBouncer pooler in front of the primary.
+CubeFace keeps connecting to the -rw service; the pooler service is
+"<cluster>-pgbouncer:5432" for other clients.
+*/}}
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ $cluster }}-pgbouncer
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-pooler
+spec:
+  cluster:
+    name: {{ $cluster }}
+  type: rw
+  instances: {{ int $pg.pgBouncer.replicas }}
+  pgbouncer:
+    poolMode: transaction
+{{- end }}
+{{- if $pg.backups.enabled }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ $cluster }}-backup
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres-backup
+spec:
+  cluster:
+    name: {{ $cluster }}
+  method: {{ $pg.backups.method | quote }}
+  schedule: {{ $pg.backups.schedule | quote }}
+  # Cold snapshot: crash-consistent, no WAL archiving needed; the primary is
+  # fenced (read-only) only while the snapshot is taken.
+  online: false
+{{- end }}
+{{- end }}

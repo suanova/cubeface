@@ -125,13 +125,59 @@ Created or pre-existing Secret name.
 {{- end -}}
 
 {{/*
+CloudNativePG Cluster CR name. Truncated so the operator-derived service names
+(<name>-rw, <name>-ro, <name>-pgbouncer) stay within 63 characters.
+*/}}
+{{- define "cubeface.postgresClusterName" -}}
+{{- printf "%s-postgres" (include "cubeface.fullname" .) | trunc 50 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Writable PostgreSQL endpoint: the CloudNativePG read-write service follows the
+current primary across failovers.
+*/}}
+{{- define "cubeface.postgresAddr" -}}
+{{- printf "%s-rw:5432" (include "cubeface.postgresClusterName" .) -}}
+{{- end -}}
+
+{{/*
+basic-auth Secret passed to spec.bootstrap.initdb.secret. The operator applies
+its password to the database owner role and re-applies it on change.
+*/}}
+{{- define "cubeface.postgresAppAuthSecretName" -}}
+{{- printf "%s-app-auth" (include "cubeface.postgresClusterName" .) -}}
+{{- end -}}
+
+{{/*
+Chart-managed Secret holding SQL_DSN for the managed cluster.
+*/}}
+{{- define "cubeface.postgresDSNSecretName" -}}
+{{- printf "%s-postgres-dsn" (include "cubeface.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Fail the render when a value embedded verbatim in a URI connection string
+would break the userinfo segment. Generated passwords are alphanumeric and
+always pass; explicit values with URI special characters are rejected instead
+of being percent-encoded so the rendered DSN stays predictable for psql and
+pgx alike.
+Usage: {{ include "cubeface.assertDSNSafe" (dict "value" $pw "label" "secrets.POSTGRES_PASSWORD") }}
+*/}}
+{{- define "cubeface.assertDSNSafe" -}}
+{{- $v := toString .value -}}
+{{- if or (contains "'" $v) (contains " " $v) (contains "@" $v) (contains ":" $v) (contains "/" $v) (contains "?" $v) (contains "#" $v) (contains "[" $v) (contains "]" $v) (contains "%" $v) -}}
+{{- fail (printf "%s must not contain single quotes, spaces or URI special characters (@ : / ? # [ ] %%)" .label) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Render-time validation shared by the chart templates. Called from the
 ConfigMap, which is always rendered.
 */}}
 {{- define "cubeface.validate" -}}
-{{- $mode := toString (default "sqlite" .Values.database.mode) -}}
-{{- if not (has $mode (list "sqlite" "postgres")) -}}
-{{- fail (printf "database.mode must be 'sqlite' or 'postgres', got %q" $mode) -}}
+{{- $mode := toString (default "postgres" .Values.database.mode) -}}
+{{- if not (has $mode (list "postgres" "external" "sqlite")) -}}
+{{- fail (printf "database.mode must be 'postgres', 'external' or 'sqlite', got %q" $mode) -}}
 {{- end -}}
 
 {{- $replicas := int (default 1 .Values.replicaCount) -}}
@@ -139,17 +185,57 @@ ConfigMap, which is always rendered.
 {{- fail "replicaCount must be at least 1" -}}
 {{- end -}}
 {{- if and (eq $mode "sqlite") (gt $replicas 1) -}}
-{{- fail "replicaCount > 1 requires database.mode=postgres: SQLite is a single-writer file and cannot be shared between pods" -}}
+{{- fail "replicaCount > 1 requires database.mode=postgres or external: SQLite is a single-writer file and cannot be shared between pods" -}}
 {{- end -}}
 
-{{- if and (eq $mode "postgres") .Values.secret.create -}}
-{{- if not (trim (toString .Values.database.postgres.dsn)) -}}
-{{- fail "database.postgres.dsn is required when database.mode=postgres and secret.create=true (or set secret.create=false and provide SQL_DSN in secret.existingSecret)" -}}
+{{- if eq $mode "external" -}}
+{{- if and .Values.secret.create (not (trim (toString .Values.database.external.dsn))) -}}
+{{- fail "database.external.dsn is required when database.mode=external and secret.create=true (or set secret.create=false and provide SQL_DSN in secret.existingSecret)" -}}
+{{- end -}}
+{{- end -}}
+
+{{- if eq $mode "postgres" -}}
+{{- $pg := .Values.database.postgres -}}
+{{- if not (trim (toString $pg.image)) -}}
+{{- fail "database.postgres.image is required when database.mode=postgres" -}}
+{{- end -}}
+{{- if lt (int (default 0 $pg.instances)) 1 -}}
+{{- fail "database.postgres.instances must be at least 1" -}}
+{{- end -}}
+{{- if not (trim (toString $pg.storage)) -}}
+{{- fail "database.postgres.storage is required when database.mode=postgres" -}}
+{{- end -}}
+{{- $pgUser := trim (toString $pg.auth.username) -}}
+{{- if not (regexMatch "^[a-z_][a-z0-9_]*$" $pgUser) -}}
+{{- fail (printf "database.postgres.auth.username must match [a-z_][a-z0-9_]* (a PostgreSQL identifier embedded in SQL_DSN), got %q" $pgUser) -}}
+{{- end -}}
+{{- $pgDatabase := trim (toString $pg.auth.database) -}}
+{{- if not (regexMatch "^[a-z_][a-z0-9_]*$" $pgDatabase) -}}
+{{- fail (printf "database.postgres.auth.database must match [a-z_][a-z0-9_]* (a PostgreSQL identifier embedded in SQL_DSN), got %q" $pgDatabase) -}}
+{{- end -}}
+{{- $pgPassword := toString (default "" .Values.secrets.POSTGRES_PASSWORD) -}}
+{{- if $pgPassword -}}
+{{- include "cubeface.assertDSNSafe" (dict "value" $pgPassword "label" "secrets.POSTGRES_PASSWORD") -}}
+{{- end -}}
+{{- if and $pg.pgBouncer.enabled (lt (int (default 0 $pg.pgBouncer.replicas)) 1) -}}
+{{- fail "database.postgres.pgBouncer.replicas must be at least 1 when the pooler is enabled" -}}
+{{- end -}}
+{{- if $pg.backups.enabled -}}
+{{- $method := toString $pg.backups.method -}}
+{{- if not (has $method (list "volumeSnapshot" "fileArchiving")) -}}
+{{- fail (printf "database.postgres.backups.method must be volumeSnapshot or fileArchiving, got %q" $method) -}}
+{{- end -}}
+{{- if and (eq $method "fileArchiving") (not $pg.backups.barmanObjectStore) -}}
+{{- fail "database.postgres.backups.barmanObjectStore is required when backups.method=fileArchiving" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
 {{- $_ := include "cubeface.secretName" . -}}
 {{- $_ := include "cubeface.basePath" . -}}
+{{- if eq $mode "postgres" -}}
+{{- $_ := include "cubeface.postgresClusterName" . -}}
+{{- end -}}
 
 {{- $origin := include "cubeface.publicOrigin" . -}}
 {{- if not (regexMatch "^https?://[^/]+$" $origin) -}}
