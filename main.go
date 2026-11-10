@@ -14,6 +14,7 @@ import (
 
 	"github.com/cubeface/cubeface/internal/config"
 	"github.com/cubeface/cubeface/internal/controller"
+	"github.com/cubeface/cubeface/internal/kube"
 	"github.com/cubeface/cubeface/internal/model"
 	"github.com/cubeface/cubeface/internal/router"
 	"github.com/cubeface/cubeface/internal/service"
@@ -42,11 +43,13 @@ func main() {
 	verification := service.NewVerificationService(cfg, email)
 	users := service.NewUserService(cfg, sessions, verification)
 	oauth := service.NewOAuthService(cfg, users, sessions)
+	catalog := service.NewModelCatalog(cfg, newCatalogSource(cfg))
 
 	userController := controller.NewUserController(cfg, users, sessions)
 	verificationController := controller.NewVerificationController(verification)
 	oauthController := controller.NewOAuthController(cfg, oauth, sessions)
 	statusController := controller.NewStatusController(cfg, oauth)
+	modelController := controller.NewModelController(catalog)
 
 	engine := router.New(router.Deps{
 		Config:       cfg,
@@ -54,6 +57,7 @@ func main() {
 		Verification: verificationController,
 		OAuth:        oauthController,
 		Status:       statusController,
+		Models:       modelController,
 		Sessions:     sessions,
 		Static:       webDist,
 	})
@@ -68,6 +72,15 @@ func main() {
 		log.Printf("oauth: no providers configured")
 	} else {
 		log.Printf("oauth: %d provider(s) configured", len(providers))
+	}
+	if cfg.ModelLibraryEnabled {
+		if cfg.ModelLibraryAPIURL != "" {
+			log.Printf("model library: using Kubernetes API at %s", cfg.ModelLibraryAPIURL)
+		} else {
+			log.Printf("model library: using in-cluster service account")
+		}
+	} else {
+		log.Printf("model library: disabled")
 	}
 
 	server := &http.Server{
@@ -95,4 +108,26 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "shutdown: %v\n", err)
 	}
+}
+
+// newCatalogSource chooses the model-library data source. No configuration
+// error is fatal: the page degrades to an unavailable state instead.
+func newCatalogSource(cfg *config.Config) kube.Source {
+	if !cfg.ModelLibraryEnabled {
+		return kube.DisabledSource
+	}
+	if cfg.ModelLibraryAPIURL != "" {
+		client, err := kube.NewAPIClient(cfg.ModelLibraryAPIURL, cfg.ModelLibraryTimeout)
+		if err != nil {
+			log.Printf("WARN model library: %v", err)
+			return kube.NoClusterSource
+		}
+		return client
+	}
+	client, err := kube.NewInClusterClient(cfg.ModelLibraryTimeout)
+	if err != nil {
+		log.Printf("WARN model library: %v", err)
+		return kube.NoClusterSource
+	}
+	return client
 }

@@ -1,0 +1,33 @@
+{{- if and .Values.modelLibrary.enabled .Values.modelLibrary.rbac.create }}
+# CubeStack ModelVersion and InferenceRuntimeProfile are cluster-scoped, so the
+# model library needs a ClusterRole rather than a namespaced Role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cubeface.modelLibraryRBACName" . }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ai.cubestack.io
+    resources:
+      - modelversions
+      - inferenceruntimeprofiles
+    verbs:
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cubeface.modelLibraryRBACName" . }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cubeface.modelLibraryRBACName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cubeface.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

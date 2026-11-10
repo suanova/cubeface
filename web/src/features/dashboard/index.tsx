@@ -49,7 +49,7 @@ export function DashboardPage() {
   return (
     <div className='min-h-svh bg-background'>
       <SiteHeader />
-      <main className='mx-auto w-full max-w-5xl px-6 pb-24 pt-28 sm:pt-32'>
+      <main className='mx-auto w-full max-w-5xl px-6 pb-24 pt-14 sm:pt-16'>
         <div className='flex flex-wrap items-start justify-between gap-4'>
           <div>
             <p className='font-mono text-xs uppercase tracking-widest text-muted-foreground'>

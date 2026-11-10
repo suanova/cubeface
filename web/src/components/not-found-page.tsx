@@ -9,7 +9,7 @@ export function NotFoundPage() {
   return (
     <div className='min-h-svh bg-background'>
       <SiteHeader />
-      <main className='mx-auto flex min-h-svh max-w-2xl flex-col items-start justify-center px-6 py-24'>
+      <main className='mx-auto flex min-h-[calc(100svh-60px)] max-w-2xl flex-col items-start justify-center px-6 py-24'>
         <span className='font-mono text-sm text-muted-foreground'>404</span>
         <h1 className='mt-3 text-4xl font-semibold tracking-tight sm:text-5xl'>
           {t('Page not found')}

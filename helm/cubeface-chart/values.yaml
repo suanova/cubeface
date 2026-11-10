@@ -23,6 +23,30 @@ image:
 
 imagePullSecrets: []
 
+# ---------------------------------------------------------------------------
+# Service account and the model library
+#
+# The model library lists CubeStack ModelVersion and InferenceRuntimeProfile
+# custom resources through the Kubernetes API. That needs a mounted service
+# account token and read-only RBAC. Both are created by default; set
+# modelLibrary.enabled=false to turn the feature off (the UI then shows a
+# DISABLED state) or modelLibrary.rbac.create=false to manage RBAC yourself.
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  # Empty uses the release fullname.
+  name: ""
+  annotations: {}
+
+modelLibrary:
+  enabled: true
+  rbac:
+    # Creates a cluster-scoped read-only ClusterRole and ClusterRoleBinding.
+    # CubeStack CRDs are cluster-scoped, so a namespaced Role is not enough.
+    create: true
+  cacheTTLSeconds: 30
+  requestTimeoutSeconds: 5
+
 # Keep at 1 with SQLite: a SQLite file cannot be shared between pods. The
 # chart rejects replicaCount > 1 in SQLite mode. PostgreSQL modes can scale.
 replicaCount: 1

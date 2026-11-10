@@ -1,0 +1,103 @@
+# CubeStack objects used by the KinD workflow to verify the model library
+# against a real Kubernetes API server. Apply model-catalog-crds.yaml first.
+#
+# The two ModelVersions share spec.model, so the catalog must collapse them
+# into one entry, prefer the annotations of the newest version and report both
+# versions as compatible with demo-qwen-bf16.
+apiVersion: ai.cubestack.io/v1alpha1
+kind: ModelVersion
+metadata:
+  name: demo-model-v1-1-0
+  annotations:
+    cubeface.io/display-name: Stale Display Name
+spec:
+  model: demo-model
+  version: v1.1.0
+  architecture: qwen2
+  quantization: bf16
+  storage:
+    strategy: Dynamic
+    dynamic:
+      storageClassName: local-path
+      capacity: 20Gi
+status:
+  usedBy:
+    - namespace: demo
+      name: demo-inference
+  conditions:
+    - type: StorageResolved
+      status: "True"
+      lastTransitionTime: "2026-01-02T00:10:00Z"
+---
+apiVersion: ai.cubestack.io/v1alpha1
+kind: ModelVersion
+metadata:
+  name: demo-model-v1-2-0
+  annotations:
+    cubeface.io/display-name: Demo Model
+    cubeface.io/publisher: CubeFace CI
+    cubeface.io/task: chat
+    cubeface.io/license: Apache-2.0
+    cubeface.io/tags: demo, qwen2
+    cubeface.io/usage-boundary: CI fixture only
+    cubeface.io/featured: "true"
+    ai.cubestack.io/description: Fixture model backed by two ModelVersions.
+spec:
+  model: demo-model
+  version: v1.2.0
+  architecture: qwen2
+  quantization: bf16
+  storage:
+    strategy: S3
+    s3:
+      uri: s3://internal-bucket/secret-prefix/demo-model
+      credentialsRef:
+        name: internal-credentials
+status:
+  usedBy:
+    - namespace: demo
+      name: demo-inference
+  rootPath: /var/lib/cubestack/secret-root
+  conditions:
+    - type: StorageResolved
+      status: "True"
+      lastTransitionTime: "2026-01-03T00:10:00Z"
+---
+apiVersion: ai.cubestack.io/v1alpha1
+kind: InferenceRuntimeProfile
+metadata:
+  name: demo-qwen-bf16
+  labels:
+    inference.ai.cubestack.io/serving-mode: pd-separation
+  annotations:
+    ai.cubestack.io/description: CI runtime profile for the demo model.
+spec:
+  accelerator:
+    vendor: nvidia
+    models:
+      - A100
+  engine:
+    name: vllm
+    version: 0.6.3
+  modelRequirements:
+    architectures:
+      - qwen2
+    quantization:
+      - bf16
+  roles:
+    - name: prefill
+      podTemplate:
+        resources:
+          gpuPerPod: 2
+    - name: decode
+      podTemplate:
+        resources:
+          gpuPerPod: 4
+status:
+  usedBy:
+    - namespace: demo
+      name: demo-inference
+  conditions:
+    - type: AssetsResolved
+      status: "True"
+      lastTransitionTime: "2026-01-03T00:20:00Z"

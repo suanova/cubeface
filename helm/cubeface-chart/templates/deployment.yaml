@@ -46,6 +46,13 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with (include "cubeface.serviceAccountName" .) }}
+      serviceAccountName: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.modelLibrary.enabled }}
+      # The model library reads CubeStack custom resources with this token.
+      automountServiceAccountToken: true
+      {{- end }}
       {{- if and .Values.podAntiAffinity (gt $replicas 1) }}
       affinity:
         podAntiAffinity:

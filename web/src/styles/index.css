@@ -8,6 +8,7 @@
 @import '@fontsource/jetbrains-mono/500.css';
 
 @import './theme.css';
+@import './site-header.css';
 
 @layer base {
   * {
