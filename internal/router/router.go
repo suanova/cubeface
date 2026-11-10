@@ -21,6 +21,7 @@ type Deps struct {
 	Verification *controller.VerificationController
 	OAuth        *controller.OAuthController
 	Status       *controller.StatusController
+	Models       *controller.ModelController
 	Sessions     *service.SessionService
 	Static       fs.FS
 }
@@ -40,6 +41,8 @@ func New(d Deps) *gin.Engine {
 	api.Use(middleware.LimitBody(), middleware.RequireSameOrigin(d.Config.PublicOrigin))
 
 	api.GET("/status", d.Status.Get)
+	api.GET("/models", d.Models.List)
+	api.GET("/models/:name", d.Models.Get)
 	api.POST("/user/register", d.Users.Register)
 	api.POST("/user/login", d.Users.Login)
 	api.POST("/user/auth/logout", d.Users.Logout)

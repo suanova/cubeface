@@ -94,6 +94,22 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
        OIDC:   {{ $origin }}{{ $base }}/api/oauth/oidc/callback
 {{- end }}
 {{- end }}
+{{- if .Values.modelLibrary.enabled }}
+   - Model library: the pod reads CubeStack ModelVersion and
+     InferenceRuntimeProfile resources with service account
+     {{ include "cubeface.serviceAccountName" . }}.
+     {{- if .Values.modelLibrary.rbac.create }}
+     ClusterRole {{ include "cubeface.modelLibraryRBACName" . }} grants list-only
+     access; it is cluster-scoped because CubeStack CRDs are cluster-scoped.
+     {{- else }}
+     modelLibrary.rbac.create=false: grant list access on ai.cubestack.io
+     modelversions and inferenceruntimeprofiles yourself.
+     {{- end }}
+     Without the CubeStack CRDs the UI still loads and shows an unavailable state.
+{{- else }}
+   - Model library is DISABLED; the UI shows a disabled state and no cluster RBAC
+     is created.
+{{- end }}
 
 4. Useful values:
 
@@ -106,3 +122,5 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
    --set database.postgres.storage=20Gi     PostgreSQL volume size
    --set database.postgres.operator.install=false
                                             reuse an existing CloudNativePG operator
+   --set modelLibrary.enabled=false         disable the model library and its RBAC
+   --set modelLibrary.rbac.create=false     manage CubeStack read RBAC yourself

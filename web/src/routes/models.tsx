@@ -1,12 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-import { PlaceholderPage } from '@/components/placeholder-page'
+import '@/features/models/models.css'
 
 export const Route = createFileRoute('/models')({
-  component: () => (
-    <PlaceholderPage
-      title='Model hub'
-      description='Browse and publish models. This catalog is being built.'
-    />
-  ),
+  component: ModelsLayout,
 })
+
+function ModelsLayout() {
+  return <Outlet />
+}

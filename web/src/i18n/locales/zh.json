@@ -33,6 +33,8 @@
   "CubeFace is an open platform for discovering, sharing, and running AI models. Publish your work, explore the community, and build the next generation of AI applications on open infrastructure.": "CubeFace 是一个发现、分享和运行 AI 模型的开放平台。发布你的作品，探索社区，在开放基础设施上构建下一代 AI 应用。",
   "Dark": "深色",
   "Dashboard": "控制台",
+  "Main navigation": "主导航",
+  "brandSub": "模型中心",
   "Dedicated Support": "专属支持",
   "Dedicated technical support, customer success manager, custom feature development, and priority SLA.": "专属技术支持、专属客户经理、定制化功能开发与优先 SLA。",
   "Docs": "文档",
@@ -143,5 +145,176 @@
   "Welcome to CubeFace": "欢迎来到 CubeFace",
   "Welcome, {{name}}": "欢迎，{{name}}",
   "Your account": "你的账号",
-  "© 2026 CubeFace": "© 2026 CubeFace"
+  "© 2026 CubeFace": "© 2026 CubeFace",
+  "models": {
+    "kicker": "MODEL HUB · 开放模型目录",
+    "title": "模型库",
+    "lead": "浏览发布到当前 CubeFace 集群的模型。每个条目都对应一个 CubeStack ModelVersion，兼容性由集群中已安装的推理运行时配置计算得出。",
+    "refresh": "刷新",
+    "refreshing": "刷新中…",
+    "headNotes": {
+      "models": "{{count}} 个模型",
+      "versions": "{{count}} 个版本",
+      "profiles": "{{count}} 个运行时配置"
+    },
+    "results": "{{total}} 个模型中匹配 {{count}} 个",
+    "resultsAll": "{{count}} 个模型",
+    "fallbackDescription": "{{architecture}} 架构 · {{quantization}} · {{count}} 个版本。该模型未提供简介注解。",
+    "notice": {
+      "label": "数据来源",
+      "text": "目录数据直接读取自集群中的 ModelVersion 与 InferenceRuntimeProfile 资源。简介、发布者、许可证与使用边界来自资源注解；使用前请核对原始模型仓库与许可条款。"
+    },
+    "spotlight": {
+      "aria": "精选模型",
+      "featured": "精选",
+      "recent": "最近更新",
+      "facts": "模型信息",
+      "publisher": "发布者",
+      "latest": "最新版本",
+      "runtimes": "兼容运行时",
+      "usedBy": "运行中的服务",
+      "open": "打开模型卡"
+    },
+    "search": {
+      "placeholder": "搜索模型、发布者或标签",
+      "clear": "清空搜索"
+    },
+    "filters": {
+      "title": "筛选模型",
+      "toggle": "筛选",
+      "close": "收起",
+      "reset": "重置全部筛选",
+      "all": "全部",
+      "groups": {
+        "task": "任务类型",
+        "arch": "架构",
+        "quant": "量化",
+        "license": "许可证",
+        "usage": "使用边界"
+      }
+    },
+    "sort": {
+      "label": "排序方式",
+      "featured": "精选优先",
+      "updated": "最近更新",
+      "name": "名称",
+      "compatibility": "兼容运行时"
+    },
+    "cards": {
+      "unknownPublisher": "未标注发布者",
+      "versions": "{{count}} 个版本",
+      "runtimes": "{{count}} 个兼容运行时",
+      "updated": "更新于 {{time}}"
+    },
+    "empty": {
+      "title": "没有匹配的模型",
+      "text": "试试放宽搜索关键词，或清空部分筛选条件。",
+      "catalogTitle": "暂无模型",
+      "catalogText": "当前集群中没有找到 ModelVersion 资源。"
+    },
+    "gridNote": "只有运行时配置同时列出模型的架构与量化时，才视为兼容。",
+    "footer": {
+      "source": "数据来源 · ModelVersion + InferenceRuntimeProfile"
+    },
+    "detail": {
+      "allModels": "模型库",
+      "crumbs": "面包屑",
+      "back": "返回模型库",
+      "copy": "复制模型名",
+      "copied": "已复制模型名",
+      "copyFailed": "无法复制模型名",
+      "meta": {
+        "updated": "更新于 {{time}}",
+        "license": "许可证 · {{license}}",
+        "versions": "{{count}} 个版本"
+      },
+      "tabs": {
+        "aria": "模型详情",
+        "overview": "概览",
+        "runtimes": "运行时",
+        "versions": "版本"
+      },
+      "overviewTitle": "模型概览",
+      "providedBy": "由 {{publisher}} 提供",
+      "boundaryTitle": "使用边界",
+      "specTitle": "最新版本 · {{version}}",
+      "usedByTitle": "使用该模型的推理服务",
+      "sideInfo": "模型信息",
+      "sideTags": "标签、许可与边界",
+      "runtimeTitle": "兼容的运行时配置",
+      "versionsTitle": "版本历史"
+    },
+    "fields": {
+      "task": "任务类型",
+      "license": "许可证",
+      "usage": "使用边界",
+      "architecture": "架构",
+      "quantization": "量化",
+      "publisher": "发布者",
+      "latest": "最新版本",
+      "versions": "版本数",
+      "runtimes": "运行时",
+      "usedBy": "使用中",
+      "usedByCount": "运行中的服务",
+      "storage": "存储",
+      "storageClass": "StorageClass",
+      "capacity": "容量",
+      "pathConfigured": "路径已配置",
+      "uriConfigured": "URI 已配置",
+      "credentialsConfigured": "凭证已配置",
+      "storageResolved": "存储已就绪",
+      "inUse": "使用中",
+      "rootPath": "Root path 已解析",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "vendor": "厂商",
+      "accelerators": "加速卡",
+      "servingMode": "服务模式",
+      "gpuPerPod": "每 Pod GPU",
+      "engine": "引擎",
+      "compatibleVersions": "兼容版本",
+      "compatibleProfiles": "兼容运行时",
+      "roles": "角色",
+      "notAnnotated": "未标注",
+      "unknown": "未知",
+      "yes": "是",
+      "no": "否",
+      "standard": "标准",
+      "pdSeparation": "PD 分离",
+      "deprecated": "已弃用",
+      "drifted": "配置漂移",
+      "assetsResolved": "资产已就绪",
+      "latestBadge": "最新"
+    },
+    "states": {
+      "loading": "正在加载模型库",
+      "warning": "提示",
+      "stale": "当前展示的是 {{time}} 的缓存数据。",
+      "profileUnavailable": "运行时配置暂不可用，兼容数量可能不完整。",
+      "profilesUnavailableDetail": "运行时配置加载失败，仍会展示模型版本与存储信息。",
+      "emptyRuntimeTitle": "没有兼容的运行时配置",
+      "emptyRuntimeText": "运行时配置必须同时列出该模型的架构与量化；空列表不会被视为通配。",
+      "emptyVersionsTitle": "暂无版本",
+      "emptyVersionsText": "该模型没有 ModelVersion 资源。",
+      "emptyUsedByTitle": "当前未被使用",
+      "emptyUsedByText": "没有推理服务在 status.usedBy 中引用该模型。",
+      "unavailable": {
+        "kicker": "模型库不可用",
+        "title": "暂时无法加载模型目录。",
+        "retry": "重试",
+        "disabled": "当前部署已关闭模型库功能。",
+        "noCluster": "CubeFace 无法访问 Kubernetes API。请部署在集群内，或配置 MODEL_LIBRARY_API_URL。",
+        "crdMissing": "当前集群未安装 CubeStack CRD。",
+        "forbidden": "CubeFace 无权列出 CubeStack 资源。请检查 ServiceAccount 的 RBAC。",
+        "unauthorized": "Kubernetes API 拒绝了 ServiceAccount 凭证。",
+        "timeout": "Kubernetes API 响应超时。",
+        "apiError": "模型库无法读取 CubeStack 资源。"
+      },
+      "notFound": {
+        "title": "模型不存在",
+        "text": "没有与这个名称匹配的模型，它可能已被重命名或删除。",
+        "back": "返回模型库"
+      }
+    }
+  }
 }

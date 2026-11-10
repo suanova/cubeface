@@ -32,6 +32,9 @@ data:
   OIDC_SCOPES: {{ .Values.config.OIDC_SCOPES | quote }}
   INITIAL_ADMIN_USERNAME: {{ .Values.config.INITIAL_ADMIN_USERNAME | quote }}
   INITIAL_ADMIN_EMAIL: {{ .Values.config.INITIAL_ADMIN_EMAIL | quote }}
+  MODEL_LIBRARY_ENABLED: {{ .Values.modelLibrary.enabled | quote }}
+  MODEL_LIBRARY_CACHE_TTL_SECONDS: {{ .Values.modelLibrary.cacheTTLSeconds | quote }}
+  MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS: {{ .Values.modelLibrary.requestTimeoutSeconds | quote }}
   {{- if eq (toString (default "postgres" .Values.database.mode)) "sqlite" }}
   SQLITE_PATH: "/data/cubeface.db"
   {{- end }}

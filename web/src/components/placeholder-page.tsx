@@ -14,7 +14,7 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
   return (
     <div className='min-h-svh bg-background'>
       <SiteHeader />
-      <main className='mx-auto flex min-h-svh max-w-3xl flex-col items-start justify-center px-6 py-24'>
+      <main className='mx-auto flex min-h-[calc(100svh-60px)] max-w-3xl flex-col items-start justify-center px-6 py-24'>
         <span className='mb-5 inline-flex items-center rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs uppercase tracking-widest text-muted-foreground'>
           {t('Coming soon')}
         </span>

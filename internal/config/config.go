@@ -73,6 +73,11 @@ type Config struct {
 
 	LoginRatePerMinute  int
 	RegisterRatePerHour int
+
+	ModelLibraryEnabled  bool
+	ModelLibraryAPIURL   string
+	ModelLibraryCacheTTL time.Duration
+	ModelLibraryTimeout  time.Duration
 }
 
 // Load reads configuration from the environment. A .env file in the working
@@ -138,6 +143,11 @@ func Load() (*Config, error) {
 
 		LoginRatePerMinute:  intEnv("LOGIN_RATE_LIMIT_PER_MINUTE", 10),
 		RegisterRatePerHour: intEnv("REGISTER_RATE_LIMIT_PER_HOUR", 5),
+
+		ModelLibraryEnabled:  boolEnv("MODEL_LIBRARY_ENABLED", true),
+		ModelLibraryAPIURL:   strings.TrimRight(strings.TrimSpace(os.Getenv("MODEL_LIBRARY_API_URL")), "/"),
+		ModelLibraryCacheTTL: secondsEnv("MODEL_LIBRARY_CACHE_TTL_SECONDS", 30),
+		ModelLibraryTimeout:  secondsEnv("MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS", 5),
 	}
 
 	if cfg.SessionSecret == "" {

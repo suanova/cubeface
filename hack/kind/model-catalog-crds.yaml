@@ -1,0 +1,48 @@
+# Minimal CubeStack CRDs for the KinD workflow.
+#
+# The real CubeStack CRDs carry a full schema. These fixtures keep only the
+# fields CubeFace reads (x-kubernetes-preserve-unknown-fields covers spec and
+# status) and deliberately omit the status subresource so the objects in
+# model-catalog-fixtures.yaml can set status.usedBy and status.conditions
+# directly. Both resources are cluster-scoped, exactly like CubeStack.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: modelversions.ai.cubestack.io
+spec:
+  group: ai.cubestack.io
+  names:
+    kind: ModelVersion
+    listKind: ModelVersionList
+    plural: modelversions
+    singular: modelversion
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: inferenceruntimeprofiles.ai.cubestack.io
+spec:
+  group: ai.cubestack.io
+  names:
+    kind: InferenceRuntimeProfile
+    listKind: InferenceRuntimeProfileList
+    plural: inferenceruntimeprofiles
+    singular: inferenceruntimeprofile
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          x-kubernetes-preserve-unknown-fields: true

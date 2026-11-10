@@ -33,6 +33,8 @@
   "CubeFace is an open platform for discovering, sharing, and running AI models. Publish your work, explore the community, and build the next generation of AI applications on open infrastructure.": "CubeFace is an open platform for discovering, sharing, and running AI models. Publish your work, explore the community, and build the next generation of AI applications on open infrastructure.",
   "Dark": "Dark",
   "Dashboard": "Dashboard",
+  "Main navigation": "Main navigation",
+  "brandSub": "Model hub",
   "Dedicated Support": "Dedicated Support",
   "Dedicated technical support, customer success manager, custom feature development, and priority SLA.": "Dedicated technical support, customer success manager, custom feature development, and priority SLA.",
   "Docs": "Docs",
@@ -143,5 +145,176 @@
   "Welcome to CubeFace": "Welcome to CubeFace",
   "Welcome, {{name}}": "Welcome, {{name}}",
   "Your account": "Your account",
-  "© 2026 CubeFace": "© 2026 CubeFace"
+  "© 2026 CubeFace": "© 2026 CubeFace",
+  "models": {
+    "kicker": "MODEL HUB · OPEN CATALOG",
+    "title": "Model library",
+    "lead": "Discover models published to this CubeFace cluster. Every entry is backed by a CubeStack ModelVersion, with compatibility computed from installed inference runtime profiles.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "headNotes": {
+      "models": "{{count}} models",
+      "versions": "{{count}} versions",
+      "profiles": "{{count}} runtime profiles"
+    },
+    "results": "{{count}} of {{total}} models",
+    "resultsAll": "{{count}} models",
+    "fallbackDescription": "{{architecture}} model · {{quantization}} · {{count}} versions. No description annotation was provided for this model.",
+    "notice": {
+      "label": "Data source",
+      "text": "Catalog data is read directly from the cluster's ModelVersion and InferenceRuntimeProfile resources. Descriptions, publishers, licenses and usage boundaries come from resource annotations; verify them against the original model repository before use."
+    },
+    "spotlight": {
+      "aria": "Featured model",
+      "featured": "Featured",
+      "recent": "Recently updated",
+      "facts": "Model facts",
+      "publisher": "Publisher",
+      "latest": "Latest version",
+      "runtimes": "Compatible runtimes",
+      "usedBy": "Running services",
+      "open": "Open model card"
+    },
+    "search": {
+      "placeholder": "Search models, publishers or tags",
+      "clear": "Clear search"
+    },
+    "filters": {
+      "title": "Filter models",
+      "toggle": "Filters",
+      "close": "Close",
+      "reset": "Reset all filters",
+      "all": "All",
+      "groups": {
+        "task": "Task",
+        "arch": "Architecture",
+        "quant": "Quantization",
+        "license": "License",
+        "usage": "Usage boundary"
+      }
+    },
+    "sort": {
+      "label": "Sort models",
+      "featured": "Featured first",
+      "updated": "Recently updated",
+      "name": "Name",
+      "compatibility": "Compatibility"
+    },
+    "cards": {
+      "unknownPublisher": "Unannotated publisher",
+      "versions": "{{count}} versions",
+      "runtimes": "{{count}} compatible runtimes",
+      "updated": "Updated {{time}}"
+    },
+    "empty": {
+      "title": "No matching models",
+      "text": "Try a broader search or clear some filters.",
+      "catalogTitle": "No models yet",
+      "catalogText": "No ModelVersion resources were found in this cluster."
+    },
+    "gridNote": "Compatibility requires a runtime profile to list both the model's architecture and its quantization.",
+    "footer": {
+      "source": "Data source · ModelVersion + InferenceRuntimeProfile"
+    },
+    "detail": {
+      "allModels": "Model library",
+      "crumbs": "Breadcrumb",
+      "back": "Back to models",
+      "copy": "Copy model name",
+      "copied": "Model name copied",
+      "copyFailed": "Could not copy the model name",
+      "meta": {
+        "updated": "Updated {{time}}",
+        "license": "License · {{license}}",
+        "versions": "{{count}} versions"
+      },
+      "tabs": {
+        "aria": "Model details",
+        "overview": "Overview",
+        "runtimes": "Runtimes",
+        "versions": "Versions"
+      },
+      "overviewTitle": "Model overview",
+      "providedBy": "Provided by {{publisher}}",
+      "boundaryTitle": "Usage boundary",
+      "specTitle": "Latest version · {{version}}",
+      "usedByTitle": "Services using this model",
+      "sideInfo": "Model information",
+      "sideTags": "Tags, license & boundary",
+      "runtimeTitle": "Compatible runtime profiles",
+      "versionsTitle": "Version history"
+    },
+    "fields": {
+      "task": "Task",
+      "license": "License",
+      "usage": "Usage boundary",
+      "architecture": "Architecture",
+      "quantization": "Quantization",
+      "publisher": "Publisher",
+      "latest": "Latest version",
+      "versions": "Versions",
+      "runtimes": "Runtimes",
+      "usedBy": "In use",
+      "usedByCount": "Running services",
+      "storage": "Storage",
+      "storageClass": "Storage class",
+      "capacity": "Capacity",
+      "pathConfigured": "Path configured",
+      "uriConfigured": "URI configured",
+      "credentialsConfigured": "Credentials configured",
+      "storageResolved": "Storage resolved",
+      "inUse": "In use",
+      "rootPath": "Root path resolved",
+      "created": "Created",
+      "updated": "Updated",
+      "vendor": "Vendor",
+      "accelerators": "Accelerators",
+      "servingMode": "Serving mode",
+      "gpuPerPod": "GPU per pod",
+      "engine": "Engine",
+      "compatibleVersions": "Compatible versions",
+      "compatibleProfiles": "Compatible profiles",
+      "roles": "Roles",
+      "notAnnotated": "Not annotated",
+      "unknown": "Unknown",
+      "yes": "Yes",
+      "no": "No",
+      "standard": "Standard",
+      "pdSeparation": "PD separation",
+      "deprecated": "Deprecated",
+      "drifted": "Drifted",
+      "assetsResolved": "Assets resolved",
+      "latestBadge": "Latest"
+    },
+    "states": {
+      "loading": "Loading model library",
+      "warning": "Warning",
+      "stale": "Showing cached catalog data from {{time}}.",
+      "profileUnavailable": "Runtime profiles are unavailable, so compatibility counts may be incomplete.",
+      "profilesUnavailableDetail": "Runtime profiles could not be loaded. Model versions and storage information are still shown.",
+      "emptyRuntimeTitle": "No compatible runtime profiles",
+      "emptyRuntimeText": "A runtime profile must list both this model's architecture and its quantization; an empty list does not act as a wildcard.",
+      "emptyVersionsTitle": "No versions",
+      "emptyVersionsText": "This model has no ModelVersion resources.",
+      "emptyUsedByTitle": "Not currently in use",
+      "emptyUsedByText": "No inference workload reports this model in status.usedBy.",
+      "unavailable": {
+        "kicker": "Model library unavailable",
+        "title": "The catalog cannot be loaded right now.",
+        "retry": "Try again",
+        "disabled": "The model library is disabled on this deployment.",
+        "noCluster": "CubeFace has no Kubernetes API access. Deploy it in-cluster or configure MODEL_LIBRARY_API_URL.",
+        "crdMissing": "The CubeStack CRDs are not installed in this cluster.",
+        "forbidden": "CubeFace is not allowed to list CubeStack resources. Check the ServiceAccount RBAC.",
+        "unauthorized": "The Kubernetes API rejected the service account credentials.",
+        "timeout": "The Kubernetes API did not respond in time.",
+        "apiError": "The model library could not read CubeStack resources."
+      },
+      "notFound": {
+        "title": "Model not found",
+        "text": "No model matches this name. It may have been renamed or removed.",
+        "back": "Back to models"
+      }
+    }
+  }
 }

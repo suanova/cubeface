@@ -14,6 +14,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "web/**"
+      - "hack/**"
       - "main.go"
   pull_request:
     paths:
@@ -25,6 +26,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "web/**"
+      - "hack/**"
       - "main.go"
   workflow_dispatch:
 
@@ -61,6 +63,83 @@ jobs:
           grep -q "cubeface-postgres-dsn" /tmp/default.yaml
           if grep -q "SQLITE_PATH" /tmp/default.yaml; then
             echo "unexpected SQLITE_PATH in managed PostgreSQL mode"
+            exit 1
+          fi
+
+      - name: Render model library RBAC
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart > /tmp/models.yaml
+          grep -q "kind: ServiceAccount" /tmp/models.yaml
+          grep -q "kind: ClusterRole" /tmp/models.yaml
+          grep -q "kind: ClusterRoleBinding" /tmp/models.yaml
+          grep -q "modelversions" /tmp/models.yaml
+          grep -q "inferenceruntimeprofiles" /tmp/models.yaml
+          # The catalog only ever lists; the model-library ClusterRole must not
+          # carry get/watch or any write verb.
+          awk '
+            /^kind: / { isRole = ($0 == "kind: ClusterRole") }
+            { doc = doc $0 "\n" }
+            /^---$/ {
+              if (isRole && doc ~ /ai[.]cubestack[.]io/) print doc
+              doc = ""
+              isRole = 0
+            }
+            END { if (isRole && doc ~ /ai[.]cubestack[.]io/) print doc }
+          ' /tmp/models.yaml > /tmp/model-library-role.yaml
+          test -s /tmp/model-library-role.yaml
+          grep -q -- "- list" /tmp/model-library-role.yaml
+          if grep -Eq -- "^[[:space:]]+- (get|watch|create|update|patch|delete|deletecollection)$" /tmp/model-library-role.yaml; then
+            echo "model library RBAC must stay list-only"
+            exit 1
+          fi
+          awk '
+            /^kind: / { isBinding = ($0 == "kind: ClusterRoleBinding") }
+            { doc = doc $0 "\n" }
+            /^---$/ {
+              if (isBinding && doc ~ /model-library/) print doc
+              doc = ""
+              isBinding = 0
+            }
+            END { if (isBinding && doc ~ /model-library/) print doc }
+          ' /tmp/models.yaml > /tmp/model-library-binding.yaml
+          test -s /tmp/model-library-binding.yaml
+          grep -q "kind: ClusterRoleBinding" /tmp/model-library-binding.yaml
+          awk '
+            /^kind: / { isSA = ($0 == "kind: ServiceAccount"); name = "" }
+            isSA && /^  name: / { name = $0 }
+            { doc = doc $0 "\n" }
+            /^---$/ {
+              if (isSA && name == "  name: cubeface") print doc
+              doc = ""
+              isSA = 0
+            }
+            END { if (isSA && name == "  name: cubeface") print doc }
+          ' /tmp/models.yaml > /tmp/model-serviceaccount.yaml
+          test -s /tmp/model-serviceaccount.yaml
+          grep -q "^  name: cubeface$" /tmp/model-serviceaccount.yaml
+          # The pod has to run as that account for the binding to apply.
+          grep -q 'serviceAccountName: "cubeface"' /tmp/models.yaml
+          grep -q "automountServiceAccountToken: true" /tmp/models.yaml
+          grep -q 'MODEL_LIBRARY_ENABLED: "true"' /tmp/models.yaml
+
+          # Disabling the library removes both the feature and its cluster RBAC.
+          helm template cubeface helm/cubeface-chart --set modelLibrary.enabled=false > /tmp/models-disabled.yaml
+          grep -q 'MODEL_LIBRARY_ENABLED: "false"' /tmp/models-disabled.yaml
+          if grep -q "model-library" /tmp/models-disabled.yaml; then
+            echo "model library RBAC must not render when the library is disabled"
+            exit 1
+          fi
+          if grep -q "ai.cubestack.io" /tmp/models-disabled.yaml; then
+            echo "unexpected CubeStack RBAC when the model library is disabled"
+            exit 1
+          fi
+
+          # Opting out of RBAC keeps the app but lets operators manage access.
+          helm template cubeface helm/cubeface-chart --set modelLibrary.rbac.create=false > /tmp/models-no-rbac.yaml
+          grep -q 'MODEL_LIBRARY_ENABLED: "true"' /tmp/models-no-rbac.yaml
+          if grep -q "ai.cubestack.io" /tmp/models-no-rbac.yaml; then
+            echo "model library RBAC must not render with rbac.create=false"
             exit 1
           fi
 
@@ -124,6 +203,10 @@ jobs:
           reject --set-string secrets.POSTGRES_PASSWORD='p@ss'
           reject --set database.postgres.backups.enabled=true --set database.postgres.backups.method=fileArchiving
           reject --set config.EMAIL_VERIFICATION_ENABLED=true
+          reject --set config.extra.MODEL_LIBRARY_ENABLED=true
+          reject --set modelLibrary.cacheTTLSeconds=0
+          reject --set modelLibrary.requestTimeoutSeconds=0
+          reject --set modelLibrary.rbac.create=true --set serviceAccount.create=false
 
   kind-postgres:
     name: Install on KinD with HA CloudNativePG
@@ -205,6 +288,18 @@ jobs:
           echo "wait-for-postgres image: $wait_image"
           printf '%s' "$wait_image" | grep -q 'cloudnative-pg/postgresql'
 
+      - name: Apply the CubeStack model catalog fixtures
+        run: |
+          set -euo pipefail
+          kubectl apply -f hack/kind/model-catalog-crds.yaml
+          kubectl wait --for=condition=Established \
+            crd/modelversions.ai.cubestack.io \
+            crd/inferenceruntimeprofiles.ai.cubestack.io \
+            --timeout=120s
+          kubectl apply -f hack/kind/model-catalog-fixtures.yaml
+          kubectl get modelversions.ai.cubestack.io -o wide
+          kubectl get inferenceruntimeprofiles.ai.cubestack.io -o wide
+
       - name: Verify CubeFace is reachable and uses PostgreSQL
         run: |
           set -euo pipefail
@@ -269,6 +364,137 @@ jobs:
           echo "postgres users=$users sessions=$sessions"
           test "$users" = "1"
           test "$sessions" -ge 1
+
+      - name: Verify the model catalog reads CubeStack CRDs
+        run: |
+          set -euo pipefail
+          # The catalog caches a CRD_MISSING result for a minute; poll until the
+          # fixtures are picked up instead of racing the cache.
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:3000/api/models > /tmp/models.json || true
+            if jq -e '.data.available == true and .data.total == 1' /tmp/models.json >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 90 ]; then
+              echo "model catalog did not become available"
+              cat /tmp/models.json || true
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/models.json | jq .
+          jq -e '
+            .success == true and
+            .data.available == true and
+            .data.stale == false and
+            .data.profiles_available == true and
+            .data.total == 1 and
+            .data.version_total == 2 and
+            .data.profile_total == 1 and
+            .data.models[0].model == "demo-model" and
+            .data.models[0].display_name == "Demo Model" and
+            .data.models[0].publisher == "CubeFace CI" and
+            .data.models[0].publisher_initials == "CC" and
+            .data.models[0].license == "Apache-2.0" and
+            .data.models[0].task == "chat" and
+            .data.models[0].featured == true and
+            .data.models[0].latest_version == "v1.2.0" and
+            .data.models[0].version_count == 2 and
+            .data.models[0].compatible_profile_count == 1 and
+            .data.models[0].used_by_count == 1 and
+            (.data.models[0].description | startswith("Fixture model")) and
+            (.data.models[0].tags | index("demo") != null)
+          ' /tmp/models.json >/dev/null
+
+          echo "detail:"
+          curl -fsS http://127.0.0.1:3000/api/models/demo-model > /tmp/model-detail.json
+          cat /tmp/model-detail.json | jq .
+          jq -e '
+            .data.available == true and
+            .data.latest_ref == "demo-model-v1-2-0" and
+            (.data.versions | length) == 2 and
+            .data.versions[0].version == "v1.2.0" and
+            .data.versions[0].is_latest == true and
+            .data.versions[0].storage.strategy == "S3" and
+            .data.versions[0].storage.uri_configured == true and
+            .data.versions[0].storage.credentials_configured == true and
+            (.data.versions[0].compatible_profiles | length) == 1 and
+            (.data.compatible_profiles | length) == 1 and
+            .data.compatible_profiles[0].name == "demo-qwen-bf16" and
+            .data.compatible_profiles[0].engine.name == "vllm" and
+            .data.compatible_profiles[0].gpu_per_pod == 4 and
+            .data.compatible_profiles[0].serving_mode == "pd-separation" and
+            (.data.compatible_profiles[0].compatible_versions | sort) == ["v1.1.0", "v1.2.0"]
+          ' /tmp/model-detail.json >/dev/null
+
+          # Lookups by ModelVersion metadata.name resolve to the same group.
+          curl -fsS http://127.0.0.1:3000/api/models/demo-model-v1-1-0 \
+            | jq -e '.data.model == "demo-model"' >/dev/null
+
+          # Storage locations and credential names must never leave the cluster.
+          if jq -e 'tojson | test("internal-bucket|internal-credentials|secret-root")' /tmp/model-detail.json >/dev/null; then
+            echo "model detail leaked storage internals"
+            exit 1
+          fi
+
+          status=$(curl -s -o /tmp/model-404.json -w '%{http_code}' \
+            http://127.0.0.1:3000/api/models/no-such-model)
+          test "$status" = "404"
+          jq -e '.success == false and .code == "MODEL_NOT_FOUND"' /tmp/model-404.json >/dev/null
+
+      - name: Verify the model catalog degrades without RBAC
+        run: |
+          set -euo pipefail
+          binding=$(kubectl get clusterrolebinding \
+            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface \
+            -o jsonpath='{.items[0].metadata.name}')
+          test -n "$binding"
+          role=$(kubectl get clusterrolebinding "$binding" -o jsonpath='{.roleRef.name}')
+          sa=$(kubectl -n cubeface get deployment cubeface \
+            -o jsonpath='{.spec.template.spec.serviceAccountName}')
+          echo "removing $binding (role $role, service account $sa)"
+          kubectl delete clusterrolebinding "$binding"
+
+          # Cached data stays available for the stale window, so allow enough
+          # time for that window to expire before requiring FORBIDDEN.
+          for i in $(seq 1 120); do
+            curl -fsS http://127.0.0.1:3000/api/models > /tmp/models-forbidden.json || true
+            if jq -e '.data.available == false and .data.reason == "FORBIDDEN"' /tmp/models-forbidden.json >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 120 ]; then
+              echo "model catalog did not report FORBIDDEN without RBAC"
+              cat /tmp/models-forbidden.json || true
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/models-forbidden.json | jq .
+          jq -e '
+            .success == true and
+            .data.available == false and
+            .data.reason == "FORBIDDEN" and
+            .data.retryable == true and
+            (.data.models | length) == 0
+          ' /tmp/models-forbidden.json >/dev/null
+
+          kubectl create clusterrolebinding "$binding" \
+            --clusterrole="$role" \
+            --serviceaccount="cubeface:$sa"
+
+          # And the catalog recovers once access is restored.
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:3000/api/models > /tmp/models-restored.json || true
+            if jq -e '.data.available == true and .data.total == 1' /tmp/models-restored.json >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "model catalog did not recover after RBAC was restored"
+              cat /tmp/models-restored.json || true
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Fail over the primary and verify CubeFace recovers
         run: |
