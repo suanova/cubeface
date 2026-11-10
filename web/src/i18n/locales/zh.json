@@ -37,7 +37,6 @@
   "brandSub": "模型中心",
   "Dedicated Support": "专属支持",
   "Dedicated technical support, customer success manager, custom feature development, and priority SLA.": "专属技术支持、专属客户经理、定制化功能开发与优先 SLA。",
-  "Docs": "文档",
   "Domestic Open-source AI Providers · Unified API": "国产开源 AI Providers · Unified API",
   "Don't have an account?": "还没有账号？",
   "Email": "邮箱",
@@ -125,6 +124,7 @@
   "Something went wrong.": "出了点问题。",
   "Something went wrong. Please try again.": "出了点问题，请重试。",
   "Start now, integrate AI into your business.": "现在开始，把 AI 能力接入你的业务。",
+  "Studio": "工作室",
   "Switch language": "切换语言",
   "System": "跟随系统",
   "Terms of Service": "服务条款",
@@ -439,6 +439,82 @@
         "text": "没有与这个名称匹配的数据集，它可能已被重命名或删除。",
         "back": "返回数据集"
       }
+    }
+  },
+  "studio": {
+    "kicker": "STUDIO · 工作室",
+    "title": "工作室",
+    "lead": "从模型或数据集入手，确认集群能运行什么，再走下一步。下面的目录实时读取；运行态、配额与工作区面板已预留位置，但尚未接入。",
+    "headNotes": {
+      "models": "{{count}} 个模型",
+      "datasets": "{{count}} 个数据集",
+      "runtime": "运行态未接入"
+    },
+    "actions": {
+      "models": "浏览模型",
+      "datasets": "浏览数据集"
+    },
+    "console": {
+      "kicker": "RUNTIME · 推理服务",
+      "title": "运行态尚未接入",
+      "status": "未接入",
+      "text": "CubeFace 目前从 CubeStack 读取模型与数据集目录。推理实例、开发环境、GPU 配额与审计日志同样位于 CubeStack，但还没有只读接口，因此这里不展示运行时长、显存或吞吐等数字。",
+      "fields": {
+        "inference": "推理实例",
+        "workspace": "开发环境",
+        "quota": "GPU 配额",
+        "logs": "审计日志"
+      },
+      "values": {
+        "planned": "未接入"
+      }
+    },
+    "recent": {
+      "models": "模型",
+      "datasets": "数据集",
+      "count": "共 {{count}} 项",
+      "empty": "该目录还没有条目。",
+      "unavailable": "目录不可用（{{reason}}）。"
+    },
+    "status": {
+      "kicker": "CONNECTIONS",
+      "title": "接入状态",
+      "models": "模型目录",
+      "datasets": "数据集目录",
+      "runtime": "运行态",
+      "states": {
+        "connected": "已接入",
+        "pending": "读取中…",
+        "unavailable": "不可用",
+        "notConnected": "未接入"
+      },
+      "note": "目录状态来自本页的实时请求；运行态还没有可用接口。"
+    },
+    "start": {
+      "title": "从这里开始",
+      "note": "均为已上线的页面",
+      "models": {
+        "title": "模型库",
+        "text": "比较权重、运行时约束与许可证，确认可以部署的模型。",
+        "cta": "打开模型库",
+        "meta": "{{count}} 个模型"
+      },
+      "datasets": {
+        "title": "数据集库",
+        "text": "按任务筛选，查看格式、体积与治理字段，再申请副本。",
+        "cta": "打开数据集库",
+        "meta": "{{count}} 个数据集"
+      },
+      "dashboard": {
+        "title": "我的工作台",
+        "text": "账号信息、登录状态与会话设置。",
+        "cta": "打开工作台",
+        "meta": "需登录"
+      },
+      "unavailable": "目录不可用"
+    },
+    "footer": {
+      "source": "数据来源 · ModelVersion · Dataset"
     }
   }
 }

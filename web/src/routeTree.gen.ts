@@ -15,10 +15,10 @@ import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DatasetsRouteImport } from './routes/datasets'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ModelsRouteImport } from './routes/models'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RankingsRouteImport } from './routes/rankings'
+import { Route as StudioRouteImport } from './routes/studio'
 import { Route as UserAgreementRouteImport } from './routes/user-agreement'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as authSignUpRouteImport } from './routes/(auth)/sign-up'
@@ -56,11 +56,6 @@ const DatasetsRoute = DatasetsRouteImport.update({
   path: '/datasets',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ModelsRoute = ModelsRouteImport.update({
   id: '/models',
   path: '/models',
@@ -74,6 +69,11 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
 const RankingsRoute = RankingsRouteImport.update({
   id: '/rankings',
   path: '/rankings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UserAgreementRoute = UserAgreementRouteImport.update({
@@ -122,10 +122,10 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
   '/datasets': typeof DatasetsRouteWithChildren
-  '/docs': typeof DocsRoute
   '/models': typeof ModelsRouteWithChildren
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
+  '/studio': typeof StudioRoute
   '/user-agreement': typeof UserAgreementRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
@@ -139,9 +139,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
-  '/docs': typeof DocsRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
+  '/studio': typeof StudioRoute
   '/user-agreement': typeof UserAgreementRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
@@ -159,10 +159,10 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
   '/datasets': typeof DatasetsRouteWithChildren
-  '/docs': typeof DocsRoute
   '/models': typeof ModelsRouteWithChildren
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
+  '/studio': typeof StudioRoute
   '/user-agreement': typeof UserAgreementRoute
   '/(auth)/sign-in': typeof authSignInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
@@ -179,10 +179,10 @@ export interface FileRouteTypes {
     | '/$'
     | '/about'
     | '/datasets'
-    | '/docs'
     | '/models'
     | '/privacy-policy'
     | '/rankings'
+    | '/studio'
     | '/user-agreement'
     | '/sign-in'
     | '/sign-up'
@@ -196,9 +196,9 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
-    | '/docs'
     | '/privacy-policy'
     | '/rankings'
+    | '/studio'
     | '/user-agreement'
     | '/sign-in'
     | '/sign-up'
@@ -215,10 +215,10 @@ export interface FileRouteTypes {
     | '/$'
     | '/about'
     | '/datasets'
-    | '/docs'
     | '/models'
     | '/privacy-policy'
     | '/rankings'
+    | '/studio'
     | '/user-agreement'
     | '/(auth)/sign-in'
     | '/(auth)/sign-up'
@@ -236,10 +236,10 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
   DatasetsRoute: typeof DatasetsRouteWithChildren
-  DocsRoute: typeof DocsRoute
   ModelsRoute: typeof ModelsRouteWithChildren
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RankingsRoute: typeof RankingsRoute
+  StudioRoute: typeof StudioRoute
   UserAgreementRoute: typeof UserAgreementRoute
 }
 
@@ -287,13 +287,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DatasetsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/models': {
       id: '/models'
       path: '/models'
@@ -313,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/rankings'
       fullPath: '/rankings'
       preLoaderRoute: typeof RankingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/user-agreement': {
@@ -433,10 +433,10 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
   DatasetsRoute: DatasetsRouteWithChildren,
-  DocsRoute: DocsRoute,
   ModelsRoute: ModelsRouteWithChildren,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RankingsRoute: RankingsRoute,
+  StudioRoute: StudioRoute,
   UserAgreementRoute: UserAgreementRoute,
 }
 export const routeTree = rootRouteImport

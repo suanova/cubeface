@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth-store'
 const NAV = [
   { to: '/models' as const, label: 'Models' },
   { to: '/datasets' as const, label: 'Datasets' },
-  { to: '/docs' as const, label: 'Docs' },
+  { to: '/studio' as const, label: 'Studio' },
 ]
 
 function userInitials(name: string): string {
