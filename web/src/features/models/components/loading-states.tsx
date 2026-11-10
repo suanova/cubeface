@@ -4,10 +4,22 @@ function Skeleton({ width, height = 12 }: { width: string; height?: number }) {
   return <span className='ml-skeleton' style={{ width, height }} />
 }
 
-export function CatalogLoading({ count = 6 }: { count?: number }) {
+export type CatalogNamespace = 'models' | 'datasets'
+
+export function CatalogLoading({
+  count = 6,
+  namespace = 'models',
+}: {
+  count?: number
+  namespace?: CatalogNamespace
+}) {
   const { t } = useTranslation()
   return (
-    <div className='ml-model-grid' aria-busy='true' aria-label={t('models.states.loading')}>
+    <div
+      className='ml-model-grid'
+      aria-busy='true'
+      aria-label={t(`${namespace}.states.loading`)}
+    >
       {Array.from({ length: count }, (_, index) => (
         <div className='ml-skeleton-card' key={index}>
           <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
@@ -34,10 +46,14 @@ export function CatalogLoading({ count = 6 }: { count?: number }) {
   )
 }
 
-export function DetailLoading() {
+export function DetailLoading({ namespace = 'models' }: { namespace?: CatalogNamespace }) {
   const { t } = useTranslation()
   return (
-    <div className='ml-detail-grid' aria-busy='true' aria-label={t('models.states.loading')}>
+    <div
+      className='ml-detail-grid'
+      aria-busy='true'
+      aria-label={t(`${namespace}.states.loading`)}
+    >
       <div className='ml-panel'>
         <Skeleton width='30%' height={18} />
         <div style={{ marginTop: 18 }}>

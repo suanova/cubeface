@@ -76,6 +76,7 @@
   "Model hosting is under construction. Soon you will be able to publish, discover and run models here.": "模型广场正在建设中。很快你就可以在这里发布、发现和运行模型。",
   "Model hub": "模型广场",
   "Models": "模型",
+  "Datasets": "数据集",
   "Models Supported": "支持模型",
   "Monthly Tokens": "月 Token",
   "Need a new verification code? Create your account again with the same email.": "需要新的验证码？请使用同一邮箱重新注册。",
@@ -97,7 +98,6 @@
   "Please enter your username": "请输入用户名",
   "Please enter your username or email": "请输入用户名或邮箱",
   "Powered by CubeFace global infrastructure with edge deployment, minimal first-token latency, and optimal throughput.": "依托 CubeFace 全球基础设施，边缘部署，极低首字延迟与最佳吞吐。",
-  "Pricing": "定价",
   "Privacy Policy": "隐私政策",
   "Product": "产品",
   "Professional, stable, and efficient AI gateway to help your team build AI applications faster.": "专业、稳定、高效的 AI 网关，助力你的团队更快地构建 AI 应用。",
@@ -139,7 +139,6 @@
   "Username or email": "用户名或邮箱",
   "Verification code": "验证码",
   "Verification code sent": "验证码已发送",
-  "View Pricing": "查看定价",
   "Welcome back": "欢迎回来",
   "Welcome back!": "欢迎回来！",
   "Welcome to CubeFace": "欢迎来到 CubeFace",
@@ -314,6 +313,131 @@
         "title": "模型不存在",
         "text": "没有与这个名称匹配的模型，它可能已被重命名或删除。",
         "back": "返回模型库"
+      }
+    }
+  },
+  "datasets": {
+    "kicker": "DATA HUB · 数据集",
+    "title": "数据集",
+    "lead": "发布到当前 CubeFace 集群、经过去标识化核查与许可标注的语料。先看字段、规模与访问条件，再决定是否申请拉取。",
+    "refresh": "刷新",
+    "refreshing": "刷新中…",
+    "headNotes": {
+      "datasets": "{{count}} 个数据集",
+      "versions": "{{count}} 个版本",
+      "formats": "{{count}} 种格式"
+    },
+    "results": "{{total}} 个数据集中匹配 {{count}} 个",
+    "resultsAll": "{{count}} 个数据集",
+    "fallbackDescription": "{{format}} 数据集 · {{count}} 个版本 · {{rows}} 条记录。该数据集未提供简介注解。",
+    "fallbackDescriptionNoRows": "{{format}} 数据集 · {{count}} 个版本。该数据集未提供简介注解。",
+    "notice": {
+      "label": "数据来源",
+      "text": "数据集条目直接读取自集群中的 CubeStack Dataset 资源。简介、发布者、许可证与治理字段来自资源注解；使用前请核对来源仓库与许可条款。"
+    },
+    "search": {
+      "placeholder": "搜索数据集、发布者或标签",
+      "clear": "清空搜索"
+    },
+    "filters": {
+      "tasks": "按任务类型筛选数据集",
+      "all": "全部",
+      "reset": "重置全部筛选"
+    },
+    "sort": {
+      "label": "排序方式",
+      "updated": "最近更新",
+      "name": "名称"
+    },
+    "rows": {
+      "records": "{{rows}} 条记录",
+      "versions": "{{count}} 个版本",
+      "open": "预览"
+    },
+    "cards": {
+      "unknownPublisher": "未标注发布者"
+    },
+    "empty": {
+      "title": "没有匹配的数据集",
+      "text": "试试放宽搜索关键词，或清空任务筛选。",
+      "catalogTitle": "暂无数据集",
+      "catalogText": "当前集群中没有找到 Dataset 资源。"
+    },
+    "gridNote": "格式、体积与记录数来自 Dataset 的 spec；缺失字段显示为未知，不做推断。",
+    "footer": {
+      "source": "数据来源 · Dataset"
+    },
+    "detail": {
+      "allDatasets": "数据集",
+      "crumbs": "面包屑",
+      "back": "返回数据集",
+      "copy": "复制数据集名",
+      "copied": "已复制数据集名",
+      "copyFailed": "无法复制数据集名",
+      "meta": {
+        "updated": "更新于 {{time}}",
+        "license": "许可证 · {{license}}",
+        "format": "格式 · {{format}}",
+        "versions": "{{count}} 个版本"
+      },
+      "tabs": {
+        "aria": "数据集详情",
+        "overview": "概览",
+        "versions": "版本"
+      },
+      "overviewTitle": "数据集概览",
+      "providedBy": "由 {{publisher}} 提供",
+      "boundaryTitle": "获取与治理",
+      "specTitle": "最新版本 · {{version}}",
+      "versionsTitle": "版本历史",
+      "descriptionTitle": "数据集简介",
+      "sideInfo": "数据集信息",
+      "sideTags": "标签、许可与边界"
+    },
+    "fields": {
+      "datasetName": "数据集",
+      "format": "格式",
+      "size": "体积",
+      "records": "记录数",
+      "publisher": "发布者",
+      "latest": "最新版本",
+      "versions": "版本数",
+      "license": "许可证",
+      "storage": "存储",
+      "task": "任务类型",
+      "access": "获取方式",
+      "deidentification": "去标识化",
+      "ethics": "伦理依据",
+      "sourceRepo": "来源仓库",
+      "usage": "使用边界",
+      "created": "创建时间",
+      "updated": "更新时间",
+      "unknown": "未知",
+      "notAnnotated": "未标注",
+      "latestBadge": "最新"
+    },
+    "states": {
+      "loading": "正在加载数据集库",
+      "warning": "提示",
+      "stale": "当前展示的是 {{time}} 的缓存数据。",
+      "emptyVersionsTitle": "暂无版本",
+      "emptyVersionsText": "该数据集没有 Dataset 资源。",
+      "unavailable": {
+        "kicker": "数据集库不可用",
+        "title": "暂时无法加载数据集目录。",
+        "retry": "重试",
+        "disabled": "当前部署已关闭数据集库功能。",
+        "noCluster": "CubeFace 无法访问 Kubernetes API。请部署在集群内，或配置 DATASET_LIBRARY_API_URL。",
+        "crdMissing": "当前集群未安装 CubeStack Dataset CRD。",
+        "forbidden": "CubeFace 无权列出 CubeStack 数据集。请检查 ServiceAccount 的 RBAC。",
+        "unauthorized": "Kubernetes API 拒绝了 ServiceAccount 凭证。",
+        "timeout": "Kubernetes API 响应超时。",
+        "apiError": "数据集库无法读取 CubeStack 资源。"
+      },
+      "notFound": {
+        "title": "数据集不存在",
+        "text": "没有与这个名称匹配的数据集，它可能已被重命名或删除。",
+        "back": "返回数据集"
       }
     }
   }

@@ -76,6 +76,7 @@
   "Model hosting is under construction. Soon you will be able to publish, discover and run models here.": "Model hosting is under construction. Soon you will be able to publish, discover and run models here.",
   "Model hub": "Model hub",
   "Models": "Models",
+  "Datasets": "Datasets",
   "Models Supported": "Models Supported",
   "Monthly Tokens": "Monthly Tokens",
   "Need a new verification code? Create your account again with the same email.": "Need a new verification code? Create your account again with the same email.",
@@ -97,7 +98,6 @@
   "Please enter your username": "Please enter your username",
   "Please enter your username or email": "Please enter your username or email",
   "Powered by CubeFace global infrastructure with edge deployment, minimal first-token latency, and optimal throughput.": "Powered by CubeFace global infrastructure with edge deployment, minimal first-token latency, and optimal throughput.",
-  "Pricing": "Pricing",
   "Privacy Policy": "Privacy Policy",
   "Product": "Product",
   "Professional, stable, and efficient AI gateway to help your team build AI applications faster.": "Professional, stable, and efficient AI gateway to help your team build AI applications faster.",
@@ -139,7 +139,6 @@
   "Username or email": "Username or email",
   "Verification code": "Verification code",
   "Verification code sent": "Verification code sent",
-  "View Pricing": "View Pricing",
   "Welcome back": "Welcome back",
   "Welcome back!": "Welcome back!",
   "Welcome to CubeFace": "Welcome to CubeFace",
@@ -314,6 +313,137 @@
         "title": "Model not found",
         "text": "No model matches this name. It may have been renamed or removed.",
         "back": "Back to models"
+      }
+    }
+  },
+  "datasets": {
+    "kicker": "DATA HUB · DATASETS",
+    "title": "Dataset library",
+    "lead": "Curated, de-identified corpora published to this CubeFace cluster. Check the schema, size and access conditions before you request a copy.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "headNotes": {
+      "datasets_one": "{{count}} dataset",
+      "datasets_other": "{{count}} datasets",
+      "versions_one": "{{count}} version",
+      "versions_other": "{{count}} versions",
+      "formats_one": "{{count}} format",
+      "formats_other": "{{count}} formats"
+    },
+    "results": "{{count}} of {{total}} datasets",
+    "resultsAll_one": "{{count}} dataset",
+    "resultsAll_other": "{{count}} datasets",
+    "fallbackDescription": "{{format}} dataset · {{count}} versions · {{rows}} records. No description annotation was provided for this dataset.",
+    "fallbackDescriptionNoRows": "{{format}} dataset · {{count}} versions. No description annotation was provided for this dataset.",
+    "notice": {
+      "label": "Data source",
+      "text": "Dataset entries are read directly from the cluster's CubeStack Dataset resources. Descriptions, publishers, licenses and governance fields come from resource annotations; verify them against the source repository before use."
+    },
+    "search": {
+      "placeholder": "Search datasets, publishers or tags",
+      "clear": "Clear search"
+    },
+    "filters": {
+      "tasks": "Filter datasets by task",
+      "all": "All",
+      "reset": "Reset all filters"
+    },
+    "sort": {
+      "label": "Sort datasets",
+      "updated": "Recently updated",
+      "name": "Name"
+    },
+    "rows": {
+      "records": "{{rows}} rows",
+      "versions_one": "{{count}} version",
+      "versions_other": "{{count}} versions",
+      "open": "Preview"
+    },
+    "cards": {
+      "unknownPublisher": "Unannotated publisher"
+    },
+    "empty": {
+      "title": "No matching datasets",
+      "text": "Try a broader search or clear the task filter.",
+      "catalogTitle": "No datasets yet",
+      "catalogText": "No Dataset resources were found in this cluster."
+    },
+    "gridNote": "Format, size and record count come from each Dataset's spec; missing values are shown as unknown rather than inferred.",
+    "footer": {
+      "source": "Data source · Dataset"
+    },
+    "detail": {
+      "allDatasets": "Dataset library",
+      "crumbs": "Breadcrumb",
+      "back": "Back to datasets",
+      "copy": "Copy dataset name",
+      "copied": "Dataset name copied",
+      "copyFailed": "Could not copy the dataset name",
+      "meta": {
+        "updated": "Updated {{time}}",
+        "license": "License · {{license}}",
+        "format": "Format · {{format}}",
+        "versions_one": "{{count}} version",
+        "versions_other": "{{count}} versions"
+      },
+      "tabs": {
+        "aria": "Dataset details",
+        "overview": "Overview",
+        "versions": "Versions"
+      },
+      "overviewTitle": "Dataset overview",
+      "providedBy": "Provided by {{publisher}}",
+      "boundaryTitle": "Access & governance",
+      "specTitle": "Latest version · {{version}}",
+      "versionsTitle": "Version history",
+      "descriptionTitle": "Description",
+      "sideInfo": "Dataset information",
+      "sideTags": "Tags, license & boundary"
+    },
+    "fields": {
+      "datasetName": "Dataset",
+      "format": "Format",
+      "size": "Size",
+      "records": "Records",
+      "publisher": "Publisher",
+      "latest": "Latest version",
+      "versions": "Versions",
+      "license": "License",
+      "storage": "Storage",
+      "task": "Task",
+      "access": "Access",
+      "deidentification": "De-identification",
+      "ethics": "Ethics basis",
+      "sourceRepo": "Source repository",
+      "usage": "Usage boundary",
+      "created": "Created",
+      "updated": "Updated",
+      "unknown": "Unknown",
+      "notAnnotated": "Not annotated",
+      "latestBadge": "Latest"
+    },
+    "states": {
+      "loading": "Loading dataset library",
+      "warning": "Warning",
+      "stale": "Showing cached catalog data from {{time}}.",
+      "emptyVersionsTitle": "No versions",
+      "emptyVersionsText": "This dataset has no Dataset resources.",
+      "unavailable": {
+        "kicker": "Dataset library unavailable",
+        "title": "The dataset catalog cannot be loaded right now.",
+        "retry": "Try again",
+        "disabled": "The dataset library is disabled on this deployment.",
+        "noCluster": "CubeFace has no Kubernetes API access. Deploy it in-cluster or configure DATASET_LIBRARY_API_URL.",
+        "crdMissing": "The CubeStack Dataset CRD is not installed in this cluster.",
+        "forbidden": "CubeFace is not allowed to list CubeStack datasets. Check the ServiceAccount RBAC.",
+        "unauthorized": "The Kubernetes API rejected the service account credentials.",
+        "timeout": "The Kubernetes API did not respond in time.",
+        "apiError": "The dataset library could not read CubeStack resources."
+      },
+      "notFound": {
+        "title": "Dataset not found",
+        "text": "No dataset matches this name. It may have been renamed or removed.",
+        "back": "Back to datasets"
       }
     }
   }

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 const NAV = [
   { to: '/models' as const, label: 'Models' },
-  { to: '/pricing' as const, label: 'Pricing' },
+  { to: '/datasets' as const, label: 'Datasets' },
   { to: '/docs' as const, label: 'Docs' },
 ]
 

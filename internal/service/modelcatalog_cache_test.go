@@ -14,10 +14,13 @@ type fakeSource struct {
 	mu        sync.Mutex
 	mvs       []kube.ModelVersion
 	profiles  []kube.RuntimeProfile
+	datasets  []kube.Dataset
 	mvErr     error
 	profErr   error
+	dsErr     error
 	mvCalls   int
 	profCalls int
+	dsCalls   int
 }
 
 func (f *fakeSource) ListModelVersions(context.Context) ([]kube.ModelVersion, error) {
@@ -32,6 +35,13 @@ func (f *fakeSource) ListRuntimeProfiles(context.Context) ([]kube.RuntimeProfile
 	defer f.mu.Unlock()
 	f.profCalls++
 	return f.profiles, f.profErr
+}
+
+func (f *fakeSource) ListDatasets(context.Context) ([]kube.Dataset, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.dsCalls++
+	return f.datasets, f.dsErr
 }
 
 func (f *fakeSource) calls() (int, int) {

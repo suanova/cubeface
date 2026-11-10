@@ -78,6 +78,11 @@ type Config struct {
 	ModelLibraryAPIURL   string
 	ModelLibraryCacheTTL time.Duration
 	ModelLibraryTimeout  time.Duration
+
+	DatasetLibraryEnabled  bool
+	DatasetLibraryAPIURL   string
+	DatasetLibraryCacheTTL time.Duration
+	DatasetLibraryTimeout  time.Duration
 }
 
 // Load reads configuration from the environment. A .env file in the working
@@ -148,6 +153,11 @@ func Load() (*Config, error) {
 		ModelLibraryAPIURL:   strings.TrimRight(strings.TrimSpace(os.Getenv("MODEL_LIBRARY_API_URL")), "/"),
 		ModelLibraryCacheTTL: secondsEnv("MODEL_LIBRARY_CACHE_TTL_SECONDS", 30),
 		ModelLibraryTimeout:  secondsEnv("MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS", 5),
+
+		DatasetLibraryEnabled:  boolEnv("DATASET_LIBRARY_ENABLED", true),
+		DatasetLibraryAPIURL:   strings.TrimRight(strings.TrimSpace(os.Getenv("DATASET_LIBRARY_API_URL")), "/"),
+		DatasetLibraryCacheTTL: secondsEnv("DATASET_LIBRARY_CACHE_TTL_SECONDS", 30),
+		DatasetLibraryTimeout:  secondsEnv("DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS", 5),
 	}
 
 	if cfg.SessionSecret == "" {

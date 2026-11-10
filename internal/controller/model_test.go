@@ -23,6 +23,9 @@ func (emptySource) ListModelVersions(context.Context) ([]kube.ModelVersion, erro
 func (emptySource) ListRuntimeProfiles(context.Context) ([]kube.RuntimeProfile, error) {
 	return []kube.RuntimeProfile{}, nil
 }
+func (emptySource) ListDatasets(context.Context) ([]kube.Dataset, error) {
+	return []kube.Dataset{}, nil
+}
 
 func modelRouter(source kube.Source) *gin.Engine {
 	cfg := &config.Config{ModelLibraryCacheTTL: time.Minute, ModelLibraryTimeout: time.Second}

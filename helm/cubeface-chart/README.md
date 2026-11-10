@@ -238,28 +238,32 @@ secret:
 
 其余 key 可省略。Deployment 对可选 key 使用 `optional: true`。托管 PostgreSQL 模式下 `SQL_DSN` 由 Chart 自己生成，不需要放进外部 Secret。
 
-## 模型库与 RBAC
+## 模型库、数据集库与 RBAC
 
-`/models` 页面直接读取 CubeStack 的 `ModelVersion` 与 `InferenceRuntimeProfile`（`ai.cubestack.io/v1alpha1`）。这些 CRD 是集群级资源，因此 Chart 默认会：
+`/models` 页面直接读取 CubeStack 的 `ModelVersion` 与 `InferenceRuntimeProfile`（`ai.cubestack.io/v1alpha1`），`/datasets` 页面读取 `Dataset`。这些 CRD 是集群级资源，因此 Chart 默认会：
 
 - 创建一个 ServiceAccount（`serviceAccount.create=true`），并让 Pod 挂载其 token；
-- 创建一个只读 ClusterRole / ClusterRoleBinding，仅允许 `list` 上述两种资源；
-- 通过 ConfigMap 注入 `MODEL_LIBRARY_ENABLED`、`MODEL_LIBRARY_CACHE_TTL_SECONDS`、`MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS`。
+- 为模型库创建一个只读 ClusterRole / ClusterRoleBinding，仅允许 `list` 上述两种模型资源；
+- 为数据集库创建独立的只读 ClusterRole / ClusterRoleBinding，仅允许 `list` `datasets`；
+- 通过 ConfigMap 注入 `MODEL_LIBRARY_*` 与 `DATASET_LIBRARY_*`（`ENABLED`、`CACHE_TTL_SECONDS`、`REQUEST_TIMEOUT_SECONDS`）。
+
+两个库的开关与 RBAC 相互独立：关闭数据集库不会影响 `/api/models`，反之亦然。两个 ClusterRoleBinding 都带 `cubeface.io/catalog: models|datasets` 标签，便于按目录分别审计或删除。
 
 ```bash
-# 默认：创建 SA + RBAC
+# 默认：创建 SA + 两套 RBAC
 helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace
 
 # 已有 CubeStack 只读 Role，自己绑定：关闭 Chart 的 RBAC
 helm install cubeface ./helm/cubeface-chart -n cubeface \
-  --set modelLibrary.rbac.create=false
+  --set modelLibrary.rbac.create=false \
+  --set datasetLibrary.rbac.create=false
 
-# 不使用模型库：不渲染 ClusterRole，页面显示 DISABLED
+# 不使用数据集库：不渲染 Dataset ClusterRole，页面显示 DISABLED
 helm install cubeface ./helm/cubeface-chart -n cubeface \
-  --set modelLibrary.enabled=false
+  --set datasetLibrary.enabled=false
 ```
 
-没有安装 CubeStack CRD 或缺少 RBAC 时，CubeFace 仍能正常启动，`/api/models` 返回 HTTP 200 且 `available:false`，页面按原因显示 `CRD_MISSING` / `FORBIDDEN` 等不可用状态。
+没有安装 CubeStack CRD 或缺少 RBAC 时，CubeFace 仍能正常启动，`/api/models` / `/api/datasets` 返回 HTTP 200 且 `available:false`，页面按原因显示 `CRD_MISSING` / `FORBIDDEN` 等不可用状态。
 
 ## 常用配置
 
@@ -267,12 +271,16 @@ helm install cubeface ./helm/cubeface-chart -n cubeface \
 |---|---|---|
 | `image.repository` / `image.tag` | `harbor.isuanova.com/suanova/cubeface` / Chart appVersion | 镜像地址 |
 | `replicaCount` | `1` | SQLite 模式必须为 1 |
-| `serviceAccount.create` | `true` | 为模型库创建 ServiceAccount |
+| `serviceAccount.create` | `true` | 为模型库/数据集库创建 ServiceAccount |
 | `serviceAccount.name` | 空（使用 fullname） | 指定已有 ServiceAccount |
 | `modelLibrary.enabled` | `true` | 是否启用模型库与 token 挂载 |
-| `modelLibrary.rbac.create` | `true` | 是否创建只读 ClusterRole / Binding |
-| `modelLibrary.cacheTTLSeconds` | `30` | 目录快照缓存时间 |
+| `modelLibrary.rbac.create` | `true` | 是否创建模型库只读 ClusterRole / Binding |
+| `modelLibrary.cacheTTLSeconds` | `30` | 模型目录快照缓存时间 |
 | `modelLibrary.requestTimeoutSeconds` | `5` | 读取 Kubernetes API 的超时 |
+| `datasetLibrary.enabled` | `true` | 是否启用数据集库与 token 挂载 |
+| `datasetLibrary.rbac.create` | `true` | 是否创建数据集库只读 ClusterRole / Binding |
+| `datasetLibrary.cacheTTLSeconds` | `30` | 数据集目录快照缓存时间 |
+| `datasetLibrary.requestTimeoutSeconds` | `5` | 读取 Dataset CRD 的超时 |
 | `database.mode` | `postgres` | `postgres` / `external` / `sqlite` |
 | `database.postgres.operator.install` | `true` | 是否安装内嵌的 CloudNativePG operator |
 | `database.postgres.instances` | `3` | PostgreSQL 实例数（>=2 才有 HA） |
@@ -322,8 +330,8 @@ Chart 在渲染阶段会拒绝以下配置：
 - 开启邮箱验证但没有 SMTP，或生产环境未放行 debug 模式
 - 创建 Ingress 但没有 host，或启用 TLS 没有 `secretName`
 - `config.extra` 覆盖 Chart 管理的保留键
-- 开启模型库 RBAC 但没有可用的 ServiceAccount
-- `modelLibrary.cacheTTLSeconds` 或 `requestTimeoutSeconds` 小于 1
+- 开启模型库或数据集库 RBAC 但没有可用的 ServiceAccount
+- `modelLibrary.*` 或 `datasetLibrary.*` 的 `cacheTTLSeconds` / `requestTimeoutSeconds` 小于 1
 
 ## 升级与卸载
 

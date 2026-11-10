@@ -7,6 +7,7 @@ metadata:
   name: {{ include "cubeface.modelLibraryRBACName" . }}
   labels:
     {{- include "cubeface.labels" . | nindent 4 }}
+    cubeface.io/catalog: models
 rules:
   - apiGroups:
       - ai.cubestack.io
@@ -22,10 +23,46 @@ metadata:
   name: {{ include "cubeface.modelLibraryRBACName" . }}
   labels:
     {{- include "cubeface.labels" . | nindent 4 }}
+    cubeface.io/catalog: models
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: {{ include "cubeface.modelLibraryRBACName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cubeface.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- if and .Values.datasetLibrary.enabled .Values.datasetLibrary.rbac.create }}
+---
+# Dataset is cluster-scoped too; keep this role separate from the model library
+# so either catalog can be disabled without touching the other.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cubeface.datasetLibraryRBACName" . }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+    cubeface.io/catalog: datasets
+rules:
+  - apiGroups:
+      - ai.cubestack.io
+    resources:
+      - datasets
+    verbs:
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cubeface.datasetLibraryRBACName" . }}
+  labels:
+    {{- include "cubeface.labels" . | nindent 4 }}
+    cubeface.io/catalog: datasets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cubeface.datasetLibraryRBACName" . }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "cubeface.serviceAccountName" . }}

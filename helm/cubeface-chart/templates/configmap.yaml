@@ -35,6 +35,9 @@ data:
   MODEL_LIBRARY_ENABLED: {{ .Values.modelLibrary.enabled | quote }}
   MODEL_LIBRARY_CACHE_TTL_SECONDS: {{ .Values.modelLibrary.cacheTTLSeconds | quote }}
   MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS: {{ .Values.modelLibrary.requestTimeoutSeconds | quote }}
+  DATASET_LIBRARY_ENABLED: {{ .Values.datasetLibrary.enabled | quote }}
+  DATASET_LIBRARY_CACHE_TTL_SECONDS: {{ .Values.datasetLibrary.cacheTTLSeconds | quote }}
+  DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS: {{ .Values.datasetLibrary.requestTimeoutSeconds | quote }}
   {{- if eq (toString (default "postgres" .Values.database.mode)) "sqlite" }}
   SQLITE_PATH: "/data/cubeface.db"
   {{- end }}

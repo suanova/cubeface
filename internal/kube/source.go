@@ -18,6 +18,10 @@ func (s UnavailableSource) ListRuntimeProfiles(context.Context) ([]RuntimeProfil
 	return nil, &StatusError{Reason: s.Reason, Retryable: s.Retryable}
 }
 
+func (s UnavailableSource) ListDatasets(context.Context) ([]Dataset, error) {
+	return nil, &StatusError{Reason: s.Reason, Retryable: s.Retryable}
+}
+
 // DisabledSource reports MODEL_LIBRARY_ENABLED=false.
 var DisabledSource Source = UnavailableSource{Reason: "DISABLED", Retryable: false}
 
