@@ -323,12 +323,16 @@
     "refresh": "Refresh",
     "refreshing": "Refreshing…",
     "headNotes": {
-      "datasets": "{{count}} datasets",
-      "versions": "{{count}} versions",
-      "formats": "{{count}} formats"
+      "datasets_one": "{{count}} dataset",
+      "datasets_other": "{{count}} datasets",
+      "versions_one": "{{count}} version",
+      "versions_other": "{{count}} versions",
+      "formats_one": "{{count}} format",
+      "formats_other": "{{count}} formats"
     },
     "results": "{{count}} of {{total}} datasets",
-    "resultsAll": "{{count}} datasets",
+    "resultsAll_one": "{{count}} dataset",
+    "resultsAll_other": "{{count}} datasets",
     "fallbackDescription": "{{format}} dataset · {{count}} versions · {{rows}} records. No description annotation was provided for this dataset.",
     "fallbackDescriptionNoRows": "{{format}} dataset · {{count}} versions. No description annotation was provided for this dataset.",
     "notice": {
@@ -351,7 +355,8 @@
     },
     "rows": {
       "records": "{{rows}} rows",
-      "versions": "{{count}} versions",
+      "versions_one": "{{count}} version",
+      "versions_other": "{{count}} versions",
       "open": "Preview"
     },
     "cards": {
@@ -378,7 +383,8 @@
         "updated": "Updated {{time}}",
         "license": "License · {{license}}",
         "format": "Format · {{format}}",
-        "versions": "{{count}} versions"
+        "versions_one": "{{count}} version",
+        "versions_other": "{{count}} versions"
       },
       "tabs": {
         "aria": "Dataset details",
