@@ -16,7 +16,8 @@ fullnameOverride: ""
 image:
   # Build and push the image from this repository, or point this at your own
   # registry. An empty tag follows .Chart.AppVersion.
-  repository: ghcr.io/cubeface/cubeface
+  # Images are built and pushed here by .github/workflows/build-image-push.yaml.
+  repository: harbor.isuanova.com/suanova/cubeface
   tag: ""
   pullPolicy: IfNotPresent
 

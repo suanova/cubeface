@@ -12,7 +12,7 @@
 
 - Kubernetes 1.29+（CloudNativePG 1.30 子 Chart 的要求）
 - Helm 3.8+
-- 可用的 CubeFace 镜像。默认 `ghcr.io/cubeface/cubeface:<appVersion>`；也可以自行构建并推送到私有仓库后覆盖 `image.repository` / `image.tag`。
+- 可用的 CubeFace 镜像。默认 `harbor.isuanova.com/suanova/cubeface:<appVersion>`，由 `.github/workflows/build-image-push.yaml` 构建推送；也可以自行构建并推送到私有仓库后覆盖 `image.repository` / `image.tag`。若 Harbor 项目不公开，需要配置 `imagePullSecrets`。
 - `postgres` / `sqlite` 模式需要一个默认 StorageClass，或在安装时显式指定。
 - 安装 CloudNativePG operator 需要 cluster 级权限（CRD、ClusterRole、Webhook）。若集群已安装 operator，设置 `database.postgres.operator.install=false`。
 
@@ -242,7 +242,7 @@ secret:
 
 | 值 | 默认 | 说明 |
 |---|---|---|
-| `image.repository` / `image.tag` | `ghcr.io/cubeface/cubeface` / Chart appVersion | 镜像地址 |
+| `image.repository` / `image.tag` | `harbor.isuanova.com/suanova/cubeface` / Chart appVersion | 镜像地址 |
 | `replicaCount` | `1` | SQLite 模式必须为 1 |
 | `database.mode` | `postgres` | `postgres` / `external` / `sqlite` |
 | `database.postgres.operator.install` | `true` | 是否安装内嵌的 CloudNativePG operator |
@@ -327,6 +327,13 @@ helm uninstall cubeface -n cubeface
 - 通过端口转发访问 `/healthz`、`/api/status`，完成注册 → 登录 → 当前用户流程；
 - 直接查询 PostgreSQL 主库的 `users` / `user_sessions` 表，确认数据写入的是 CNPG 集群而不是 SQLite；
 - 删除主库 Pod 触发自动故障切换，验证新主库产生、集群恢复到 3 个 ready 实例且 CubeFace 继续服务。
+
+镜像发布由另外两个工作流负责，均推送到 `harbor.isuanova.com/suanova/cubeface`：
+
+- [`build-image-pr.yaml`](../../.github/workflows/build-image-pr.yaml)：PR 构建并推送 `pr-<number>` / `sha-<short>`；
+- [`build-image-push.yaml`](../../.github/workflows/build-image-push.yaml)：`main`/`master` 与 `v*` 标签构建多架构镜像，推送分支名、`sha-<short>`、语义化版本，默认分支另有 `latest`。
+
+两者使用 `vars.CI_BOT_NAME` 与 `secrets.CI_BOT_PASSWORD` 登录 Harbor；fork/Dependabot PR 没有 secret 时只构建不推送。
 
 ## 故障排查
 

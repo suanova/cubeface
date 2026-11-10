@@ -143,6 +143,13 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 5. 直接查询 PostgreSQL 主库确认账号与会话确实写入数据库；
 6. 删除主库 Pod 触发自动故障切换，验证新主库选举成功且 CubeFace 恢复服务。
 
+镜像由两个工作流构建并推送到 `harbor.isuanova.com/suanova/cubeface`：
+
+- [`.github/workflows/build-image-pr.yaml`](.github/workflows/build-image-pr.yaml)：PR 打开/更新时构建，推送 `pr-<number>` 与 `sha-<short>` 标签，用于预览环境；
+- [`.github/workflows/build-image-push.yaml`](.github/workflows/build-image-push.yaml)：推送到 `main`/`master` 或 `v*` 标签时构建多架构镜像，推送分支名、`sha-<short>`、`v*` 对应的语义化版本，默认分支额外打 `latest`。
+
+两个工作流都用 `vars.CI_BOT_NAME` / `secrets.CI_BOT_PASSWORD` 登录 Harbor。来自 fork 或 Dependabot 的 PR 拿不到 secret，此时只构建、不推送。Chart 默认镜像已指向该 Harbor 仓库（`image.repository`），Harbor 项目不公开时需要通过 `imagePullSecrets` 提供拉取凭据。
+
 ## 配置说明
 
 完整列表见 [`.env.example`](.env.example)，常用项：
