@@ -37,7 +37,6 @@
   "brandSub": "Model hub",
   "Dedicated Support": "Dedicated Support",
   "Dedicated technical support, customer success manager, custom feature development, and priority SLA.": "Dedicated technical support, customer success manager, custom feature development, and priority SLA.",
-  "Docs": "Docs",
   "Domestic Open-source AI Providers · Unified API": "Domestic Open-source AI Providers · Unified API",
   "Don't have an account?": "Don't have an account?",
   "Email": "Email",
@@ -125,6 +124,7 @@
   "Something went wrong.": "Something went wrong.",
   "Something went wrong. Please try again.": "Something went wrong. Please try again.",
   "Start now, integrate AI into your business.": "Start now, integrate AI into your business.",
+  "Studio": "Studio",
   "Switch language": "Switch language",
   "System": "System",
   "Terms of Service": "Terms of Service",
@@ -445,6 +445,87 @@
         "text": "No dataset matches this name. It may have been renamed or removed.",
         "back": "Back to datasets"
       }
+    }
+  },
+  "studio": {
+    "kicker": "STUDIO · WORKSPACE",
+    "title": "Studio",
+    "lead": "Start from a model or a dataset, check what the cluster can run, and take the next step. The catalogs below are read live; runtime, quota and workspace panels are described but not connected yet.",
+    "headNotes": {
+      "models_one": "{{count}} model",
+      "models_other": "{{count}} models",
+      "datasets_one": "{{count}} dataset",
+      "datasets_other": "{{count}} datasets",
+      "runtime": "runtime not connected"
+    },
+    "actions": {
+      "models": "Browse models",
+      "datasets": "Browse datasets"
+    },
+    "console": {
+      "kicker": "RUNTIME · INFERENCE SERVICE",
+      "title": "Runtime is not connected yet",
+      "status": "Not connected",
+      "text": "CubeFace reads the model and dataset catalogs from CubeStack. Inference instances, development environments, GPU quota and audit logs also live in CubeStack, but no read-only endpoint exposes them yet, so this page shows no uptime, GPU or throughput figures.",
+      "fields": {
+        "inference": "Inference",
+        "workspace": "Workspace",
+        "quota": "GPU quota",
+        "logs": "Audit log"
+      },
+      "values": {
+        "planned": "Not connected"
+      }
+    },
+    "recent": {
+      "models": "Models",
+      "datasets": "Datasets",
+      "count_one": "{{count}} in catalog",
+      "count_other": "{{count}} in catalog",
+      "empty": "This catalog has no entries yet.",
+      "unavailable": "Catalog unavailable ({{reason}})."
+    },
+    "status": {
+      "kicker": "CONNECTIONS",
+      "title": "Connection status",
+      "models": "Model catalog",
+      "datasets": "Dataset catalog",
+      "runtime": "Runtime",
+      "states": {
+        "connected": "Connected",
+        "pending": "Loading…",
+        "unavailable": "Unavailable",
+        "notConnected": "Not connected"
+      },
+      "note": "Status reflects this page's live catalog requests. Runtime data has no endpoint yet."
+    },
+    "start": {
+      "title": "Start here",
+      "note": "All entries are live pages",
+      "models": {
+        "title": "Model library",
+        "text": "Compare weights, runtime constraints and licenses before creating an inference instance.",
+        "cta": "Open models",
+        "meta_one": "{{count}} model",
+        "meta_other": "{{count}} models"
+      },
+      "datasets": {
+        "title": "Dataset library",
+        "text": "Filter by task, check format, size and governance annotations, then request a copy.",
+        "cta": "Open datasets",
+        "meta_one": "{{count}} dataset",
+        "meta_other": "{{count}} datasets"
+      },
+      "dashboard": {
+        "title": "My workspace",
+        "text": "Account details, sign-in state and session settings for your CubeFace account.",
+        "cta": "Open dashboard",
+        "meta": "Sign-in required"
+      },
+      "unavailable": "Catalog unavailable"
+    },
+    "footer": {
+      "source": "Data source · ModelVersion · Dataset"
     }
   }
 }

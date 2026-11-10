@@ -1,0 +1,480 @@
+/*
+ * Studio styles.
+ *
+ * Follows the studio section of the StarStack model-hub mockup: the inverted
+ * runtime console, the recent-panel/status grid and the bordered start-here
+ * rows. Every rule is scoped to .ml-scope and st-prefixed; the page shell,
+ * page head and footer come from models.css.
+ */
+
+/* Runtime console --------------------------------------------------------- */
+
+.ml-scope .st-console {
+  --st-ink: var(--ml-bg);
+  padding: 24px 26px;
+  margin-bottom: 32px;
+  border-radius: var(--ml-radius);
+  background: var(--ml-fg);
+  color: var(--st-ink);
+}
+
+.dark .ml-scope .st-console {
+  --st-ink: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--ml-border);
+}
+
+.ml-scope .st-console-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ml-scope .st-console-kicker {
+  margin: 0;
+  font-family: var(--ml-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ml-panel-muted);
+}
+
+.ml-scope .st-console-title {
+  margin: 7px 0 0;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--st-ink);
+}
+
+.ml-scope .st-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 27px;
+  padding: 0 10px;
+  border: 1px solid var(--ml-panel-line);
+  border-radius: var(--ml-radius);
+  font-family: var(--ml-mono);
+  font-size: 11px;
+  color: var(--st-ink);
+  white-space: nowrap;
+}
+
+.ml-scope .st-pill .st-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ml-panel-muted);
+}
+
+.ml-scope .st-console-text {
+  max-width: 76ch;
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ml-panel-muted);
+  text-wrap: pretty;
+}
+
+.ml-scope .st-console-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--ml-panel-line);
+}
+
+.ml-scope .st-console-stat {
+  min-width: 0;
+}
+
+.ml-scope .st-console-stat dt {
+  font-family: var(--ml-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ml-panel-muted);
+}
+
+.ml-scope .st-console-stat dd {
+  margin: 5px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--st-ink);
+  overflow-wrap: anywhere;
+}
+
+/* Recent panels and status card ------------------------------------------- */
+
+.ml-scope .st-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 286px;
+  gap: 30px;
+  align-items: start;
+  margin-bottom: 34px;
+}
+
+.ml-scope .st-col {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  min-width: 0;
+}
+
+.ml-scope .st-panel {
+  min-width: 0;
+}
+
+.ml-scope .st-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.ml-scope .st-section-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ml-scope .st-section-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ml-scope .st-count {
+  font-family: var(--ml-mono);
+  font-size: 10.5px;
+  color: var(--ml-muted);
+  text-align: right;
+}
+
+.ml-scope .st-recent-list {
+  border-top: 1px solid var(--ml-fg);
+}
+
+.ml-scope .st-recent-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  gap: 16px;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px;
+  border-bottom: 1px solid var(--ml-border);
+  color: var(--ml-fg);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.ml-scope .st-recent-row:hover {
+  background: var(--ml-surface);
+}
+
+.ml-scope .st-recent-row:focus-visible {
+  outline: 2px solid var(--ml-accent);
+  outline-offset: -2px;
+}
+
+.ml-scope .st-recent-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ml-scope .st-recent-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.ml-scope .st-recent-meta {
+  font-family: var(--ml-mono);
+  font-size: 11px;
+  color: var(--ml-muted);
+  overflow-wrap: anywhere;
+}
+
+.ml-scope .st-recent-time {
+  font-family: var(--ml-mono);
+  font-size: 11px;
+  color: var(--ml-muted);
+  white-space: nowrap;
+}
+
+.ml-scope .st-recent-arrow {
+  width: 14px;
+  height: 14px;
+  color: var(--ml-muted);
+  justify-self: end;
+}
+
+.ml-scope .st-recent-row:hover .st-recent-arrow {
+  color: var(--ml-fg);
+}
+
+.ml-scope .st-recent-row.is-skeleton {
+  grid-template-columns: minmax(0, 1fr);
+  pointer-events: none;
+}
+
+.ml-scope .st-skel-line {
+  display: block;
+  width: 38%;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--ml-surface);
+}
+
+.ml-scope .st-skel-line.is-short {
+  width: 22%;
+  height: 8px;
+}
+
+.ml-scope .st-inline-note {
+  margin: 0;
+  padding: 16px 10px;
+  border-bottom: 1px solid var(--ml-border);
+  font-size: 12.5px;
+  color: var(--ml-muted);
+}
+
+.ml-scope .st-status-card {
+  padding: 18px;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--ml-radius);
+  background: var(--ml-surface);
+}
+
+.ml-scope .st-side-kicker {
+  margin: 0 0 6px;
+  font-family: var(--ml-mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ml-muted);
+}
+
+.ml-scope .st-status-card h2 {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ml-scope .st-status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ml-scope .st-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ml-border);
+  font-size: 12.5px;
+}
+
+.ml-scope .st-status-row:first-child {
+  border-top: 1px solid var(--ml-border);
+}
+
+.ml-scope .st-status-label {
+  color: var(--ml-muted-ink);
+}
+
+.ml-scope .st-status-value {
+  margin-left: auto;
+  font-family: var(--ml-mono);
+  font-size: 10.5px;
+  color: var(--ml-muted);
+  white-space: nowrap;
+}
+
+.ml-scope .st-status-card .st-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ml-muted);
+  flex: none;
+}
+
+.ml-scope .st-status-card .st-dot.is-on {
+  background: var(--ml-accent);
+}
+
+.ml-scope .st-status-card .st-dot.is-warn {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ml-muted);
+}
+
+.ml-scope .st-side-note {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--ml-border);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ml-muted);
+}
+
+/* Start here -------------------------------------------------------------- */
+
+.ml-scope .st-start {
+  padding-top: 18px;
+  border-top: 1px solid var(--ml-fg);
+}
+
+.ml-scope .st-section-head.is-bordered {
+  margin-bottom: 2px;
+}
+
+.ml-scope .st-start-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 180px auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 10px;
+  border-bottom: 1px solid var(--ml-border);
+  color: var(--ml-fg);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.ml-scope .st-start-row:hover {
+  background: var(--ml-surface);
+}
+
+.ml-scope .st-start-row:focus-visible {
+  outline: 2px solid var(--ml-accent);
+  outline-offset: -2px;
+}
+
+.ml-scope .st-start-idx {
+  font-family: var(--ml-mono);
+  font-size: 10.5px;
+  color: var(--ml-muted);
+}
+
+.ml-scope .st-start-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ml-scope .st-start-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ml-scope .st-start-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ml-muted);
+  overflow-wrap: anywhere;
+}
+
+.ml-scope .st-start-meta {
+  font-family: var(--ml-mono);
+  font-size: 10.5px;
+  color: var(--ml-muted);
+  text-align: right;
+}
+
+.ml-scope .st-start-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--ml-radius);
+  font-size: 12.5px;
+  white-space: nowrap;
+  transition: border-color 0.15s ease;
+}
+
+.ml-scope .st-start-row:hover .st-start-cta {
+  border-color: var(--ml-muted);
+}
+
+.ml-scope .st-start-cta svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Responsive -------------------------------------------------------------- */
+
+@media (max-width: 1000px) {
+  .ml-scope .st-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ml-scope .st-status-card {
+    order: -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .ml-scope .st-console-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ml-scope .st-start-row {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    gap: 14px;
+  }
+
+  .ml-scope .st-start-meta {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ml-scope .st-console {
+    padding: 20px;
+  }
+
+  .ml-scope .st-console-title {
+    font-size: 18px;
+  }
+
+  .ml-scope .st-start-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .ml-scope .st-start-cta {
+    height: 28px;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .ml-scope .st-console-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ml-scope .st-recent-time {
+    display: none;
+  }
+
+  .ml-scope .st-recent-row {
+    grid-template-columns: minmax(0, 1fr) 16px;
+  }
+}
