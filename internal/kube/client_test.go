@@ -109,6 +109,49 @@ func TestListTimesOut(t *testing.T) {
 	}
 }
 
+func TestListDatasetsDecodesSpec(t *testing.T) {
+	var gotPath string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_, _ = w.Write([]byte(`{"metadata":{},"items":[{
+			"metadata":{"name":"demo-v1","creationTimestamp":"2026-11-01T08:00:00Z",
+				"annotations":{"cubeface.io/display-name":"Demo"}},
+			"spec":{"dataset":"demo","version":"v1","format":"Parquet",
+				"size":"1.2Gi","recordCount":120000,
+				"storage":{"strategy":"S3","s3":{"uri":"s3://bucket/demo","credentialsRef":{"name":"creds"}}}}
+		}]}`))
+	}))
+	defer server.Close()
+
+	client, err := NewAPIClient(server.URL, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	items, err := client.ListDatasets(context.Background())
+	if err != nil {
+		t.Fatalf("ListDatasets: %v", err)
+	}
+	if gotPath != datasetPath {
+		t.Fatalf("path = %s, want %s", gotPath, datasetPath)
+	}
+	if len(items) != 1 {
+		t.Fatalf("items = %#v", items)
+	}
+	ds := items[0]
+	if ds.Spec.Dataset != "demo" || ds.Spec.Version != "v1" || ds.Spec.Format != "Parquet" {
+		t.Fatalf("spec = %#v", ds.Spec)
+	}
+	// resource.Quantity decodes as its canonical string; 1.2Gi stays 1288490188800
+	// bytes when serialized by the apiserver, but any non-empty size is enough
+	// for the catalog to display.
+	if ds.Spec.Size == "" || ds.Spec.RecordCount == nil || *ds.Spec.RecordCount != 120000 {
+		t.Fatalf("size/record count = %q/%v", ds.Spec.Size, ds.Spec.RecordCount)
+	}
+	if ds.Spec.Storage.Strategy != "S3" || ds.Spec.Storage.S3 == nil || ds.Spec.Storage.S3.URI == "" {
+		t.Fatalf("storage = %#v", ds.Spec.Storage)
+	}
+}
+
 func TestNewInClusterClientWithoutEnvironment(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "")

@@ -22,6 +22,7 @@ type Deps struct {
 	OAuth        *controller.OAuthController
 	Status       *controller.StatusController
 	Models       *controller.ModelController
+	Datasets     *controller.DatasetController
 	Sessions     *service.SessionService
 	Static       fs.FS
 }
@@ -43,6 +44,8 @@ func New(d Deps) *gin.Engine {
 	api.GET("/status", d.Status.Get)
 	api.GET("/models", d.Models.List)
 	api.GET("/models/:name", d.Models.Get)
+	api.GET("/datasets", d.Datasets.List)
+	api.GET("/datasets/:name", d.Datasets.Get)
 	api.POST("/user/register", d.Users.Register)
 	api.POST("/user/login", d.Users.Login)
 	api.POST("/user/auth/logout", d.Users.Logout)

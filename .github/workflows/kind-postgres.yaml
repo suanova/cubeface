@@ -130,16 +130,88 @@ jobs:
             echo "model library RBAC must not render when the library is disabled"
             exit 1
           fi
-          if grep -q "ai.cubestack.io" /tmp/models-disabled.yaml; then
-            echo "unexpected CubeStack RBAC when the model library is disabled"
+          if grep -Eq "modelversions|inferenceruntimeprofiles" /tmp/models-disabled.yaml; then
+            echo "unexpected CubeStack model RBAC when the model library is disabled"
             exit 1
           fi
 
           # Opting out of RBAC keeps the app but lets operators manage access.
           helm template cubeface helm/cubeface-chart --set modelLibrary.rbac.create=false > /tmp/models-no-rbac.yaml
           grep -q 'MODEL_LIBRARY_ENABLED: "true"' /tmp/models-no-rbac.yaml
-          if grep -q "ai.cubestack.io" /tmp/models-no-rbac.yaml; then
+          if grep -Eq "modelversions|inferenceruntimeprofiles" /tmp/models-no-rbac.yaml; then
             echo "model library RBAC must not render with rbac.create=false"
+            exit 1
+          fi
+
+      - name: Render dataset library RBAC
+        run: |
+          set -euo pipefail
+          helm template cubeface helm/cubeface-chart > /tmp/datasets.yaml
+          grep -q 'DATASET_LIBRARY_ENABLED: "true"' /tmp/datasets.yaml
+          grep -q 'DATASET_LIBRARY_CACHE_TTL_SECONDS: "30"' /tmp/datasets.yaml
+          grep -q 'DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS: "5"' /tmp/datasets.yaml
+          # Separate labels let operators and this workflow select each catalog.
+          grep -q "cubeface.io/catalog: datasets" /tmp/datasets.yaml
+          grep -q "cubeface.io/catalog: models" /tmp/datasets.yaml
+          # The dataset ClusterRole must list datasets only, and list-only.
+          awk '
+            /^kind: / { isRole = ($0 == "kind: ClusterRole") }
+            { doc = doc $0 "\n" }
+            /^---$/ {
+              if (isRole && doc ~ /cubeface[.]io\/catalog: datasets/) print doc
+              doc = ""
+              isRole = 0
+            }
+            END { if (isRole && doc ~ /cubeface[.]io\/catalog: datasets/) print doc }
+          ' /tmp/datasets.yaml > /tmp/dataset-library-role.yaml
+          test -s /tmp/dataset-library-role.yaml
+          grep -q -- "- datasets" /tmp/dataset-library-role.yaml
+          grep -q -- "- list" /tmp/dataset-library-role.yaml
+          if grep -Eq -- "^[[:space:]]+- (get|watch|create|update|patch|delete|deletecollection)$" /tmp/dataset-library-role.yaml; then
+            echo "dataset library RBAC must stay list-only"
+            exit 1
+          fi
+          if grep -Eq "modelversions|inferenceruntimeprofiles" /tmp/dataset-library-role.yaml; then
+            echo "dataset library ClusterRole must not grant model access"
+            exit 1
+          fi
+          awk '
+            /^kind: / { isBinding = ($0 == "kind: ClusterRoleBinding") }
+            { doc = doc $0 "\n" }
+            /^---$/ {
+              if (isBinding && doc ~ /cubeface[.]io\/catalog: datasets/) print doc
+              doc = ""
+              isBinding = 0
+            }
+            END { if (isBinding && doc ~ /cubeface[.]io\/catalog: datasets/) print doc }
+          ' /tmp/datasets.yaml > /tmp/dataset-library-binding.yaml
+          test -s /tmp/dataset-library-binding.yaml
+          grep -q "kind: ClusterRoleBinding" /tmp/dataset-library-binding.yaml
+          grep -q 'serviceAccountName: "cubeface"' /tmp/datasets.yaml
+
+          # Disabling the dataset library leaves the model library untouched.
+          helm template cubeface helm/cubeface-chart --set datasetLibrary.enabled=false > /tmp/datasets-disabled.yaml
+          grep -q 'DATASET_LIBRARY_ENABLED: "false"' /tmp/datasets-disabled.yaml
+          if grep -q "catalog: datasets" /tmp/datasets-disabled.yaml; then
+            echo "dataset library RBAC must not render when the library is disabled"
+            exit 1
+          fi
+          grep -q "cubeface.io/catalog: models" /tmp/datasets-disabled.yaml
+
+          # Opting out of RBAC keeps the feature enabled.
+          helm template cubeface helm/cubeface-chart --set datasetLibrary.rbac.create=false > /tmp/datasets-no-rbac.yaml
+          grep -q 'DATASET_LIBRARY_ENABLED: "true"' /tmp/datasets-no-rbac.yaml
+          if grep -q "catalog: datasets" /tmp/datasets-no-rbac.yaml; then
+            echo "dataset library RBAC must not render with rbac.create=false"
+            exit 1
+          fi
+
+          # With both libraries off the pod mounts no service account token.
+          helm template cubeface helm/cubeface-chart \
+            --set modelLibrary.enabled=false \
+            --set datasetLibrary.enabled=false > /tmp/catalogs-off.yaml
+          if grep -q "automountServiceAccountToken" /tmp/catalogs-off.yaml; then
+            echo "no token should be mounted when both catalogs are disabled"
             exit 1
           fi
 
@@ -204,9 +276,13 @@ jobs:
           reject --set database.postgres.backups.enabled=true --set database.postgres.backups.method=fileArchiving
           reject --set config.EMAIL_VERIFICATION_ENABLED=true
           reject --set config.extra.MODEL_LIBRARY_ENABLED=true
+          reject --set config.extra.DATASET_LIBRARY_ENABLED=true
           reject --set modelLibrary.cacheTTLSeconds=0
           reject --set modelLibrary.requestTimeoutSeconds=0
           reject --set modelLibrary.rbac.create=true --set serviceAccount.create=false
+          reject --set datasetLibrary.cacheTTLSeconds=0
+          reject --set datasetLibrary.requestTimeoutSeconds=0
+          reject --set datasetLibrary.rbac.create=true --set serviceAccount.create=false
 
   kind-postgres:
     name: Install on KinD with HA CloudNativePG
@@ -288,17 +364,19 @@ jobs:
           echo "wait-for-postgres image: $wait_image"
           printf '%s' "$wait_image" | grep -q 'cloudnative-pg/postgresql'
 
-      - name: Apply the CubeStack model catalog fixtures
+      - name: Apply the CubeStack catalog fixtures
         run: |
           set -euo pipefail
           kubectl apply -f hack/kind/model-catalog-crds.yaml
           kubectl wait --for=condition=Established \
             crd/modelversions.ai.cubestack.io \
             crd/inferenceruntimeprofiles.ai.cubestack.io \
+            crd/datasets.ai.cubestack.io \
             --timeout=120s
           kubectl apply -f hack/kind/model-catalog-fixtures.yaml
           kubectl get modelversions.ai.cubestack.io -o wide
           kubectl get inferenceruntimeprofiles.ai.cubestack.io -o wide
+          kubectl get datasets.ai.cubestack.io -o wide
 
       - name: Verify CubeFace is reachable and uses PostgreSQL
         run: |
@@ -442,34 +520,126 @@ jobs:
           test "$status" = "404"
           jq -e '.success == false and .code == "MODEL_NOT_FOUND"' /tmp/model-404.json >/dev/null
 
-      - name: Verify the model catalog degrades without RBAC
+      - name: Verify the dataset catalog reads the Dataset CRD
         run: |
           set -euo pipefail
-          binding=$(kubectl get clusterrolebinding \
-            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface \
+          # Same CRD_MISSING negative cache as the model catalog: poll instead
+          # of racing the one-minute backoff.
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:3000/api/datasets > /tmp/datasets.json || true
+            if jq -e '.data.available == true and .data.total == 1' /tmp/datasets.json >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 90 ]; then
+              echo "dataset catalog did not become available"
+              cat /tmp/datasets.json || true
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/datasets.json | jq .
+          jq -e '
+            .success == true and
+            .data.available == true and
+            .data.stale == false and
+            .data.total == 1 and
+            .data.version_total == 2 and
+            .data.datasets[0].dataset == "demo-dataset" and
+            .data.datasets[0].display_name == "Demo Dataset" and
+            .data.datasets[0].publisher == "CubeFace CI" and
+            .data.datasets[0].publisher_initials == "CC" and
+            .data.datasets[0].format == "Parquet" and
+            .data.datasets[0].task == "sft" and
+            .data.datasets[0].license == "CC-BY-4.0" and
+            .data.datasets[0].access == "public" and
+            .data.datasets[0].deidentification == "PII removed" and
+            .data.datasets[0].ethics == "Internal review" and
+            .data.datasets[0].source_repo == "https://example.com/demo-dataset" and
+            .data.datasets[0].usage_boundary == "CI fixture only" and
+            .data.datasets[0].featured == true and
+            .data.datasets[0].size == "1.2Gi" and
+            .data.datasets[0].record_count == 120000 and
+            .data.datasets[0].storage_strategy == "S3" and
+            .data.datasets[0].latest_version == "v1.1.0" and
+            .data.datasets[0].version_count == 2 and
+            (.data.datasets[0].description | startswith("Fixture dataset")) and
+            (.data.datasets[0].tags | index("parquet") != null)
+          ' /tmp/datasets.json >/dev/null
+
+          echo "detail:"
+          curl -fsS http://127.0.0.1:3000/api/datasets/demo-dataset > /tmp/dataset-detail.json
+          cat /tmp/dataset-detail.json | jq .
+          jq -e '
+            .data.available == true and
+            .data.latest_ref == "demo-dataset-v1-1-0" and
+            (.data.versions | length) == 2 and
+            .data.versions[0].version == "v1.1.0" and
+            .data.versions[0].is_latest == true and
+            .data.versions[0].format == "Parquet" and
+            .data.versions[0].size == "1.2Gi" and
+            .data.versions[0].record_count == 120000 and
+            .data.versions[0].storage.strategy == "S3" and
+            .data.versions[0].storage.uri_configured == true and
+            .data.versions[0].storage.credentials_configured == true and
+            .data.versions[1].version == "v1.0.0" and
+            .data.versions[1].is_latest == false and
+            .data.versions[1].storage.strategy == "HostPath" and
+            .data.versions[1].storage.path_configured == true
+          ' /tmp/dataset-detail.json >/dev/null
+
+          # Lookups by Dataset metadata.name resolve to the same group.
+          curl -fsS http://127.0.0.1:3000/api/datasets/demo-dataset-v1-0-0 \
+            | jq -e '.data.dataset == "demo-dataset"' >/dev/null
+
+          # Storage locations, paths and credential names stay in the cluster.
+          if jq -e 'tojson | test("internal-bucket|internal-credentials|secret-root")' /tmp/dataset-detail.json /tmp/datasets.json >/dev/null; then
+            echo "dataset responses leaked storage internals"
+            exit 1
+          fi
+
+          status=$(curl -s -o /tmp/dataset-404.json -w '%{http_code}' \
+            http://127.0.0.1:3000/api/datasets/no-such-dataset)
+          test "$status" = "404"
+          jq -e '.success == false and .code == "DATASET_NOT_FOUND"' /tmp/dataset-404.json >/dev/null
+
+      - name: Verify both catalogs degrade without RBAC
+        run: |
+          set -euo pipefail
+          model_binding=$(kubectl get clusterrolebinding \
+            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface,cubeface.io/catalog=models \
             -o jsonpath='{.items[0].metadata.name}')
-          test -n "$binding"
-          role=$(kubectl get clusterrolebinding "$binding" -o jsonpath='{.roleRef.name}')
+          dataset_binding=$(kubectl get clusterrolebinding \
+            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface,cubeface.io/catalog=datasets \
+            -o jsonpath='{.items[0].metadata.name}')
+          test -n "$model_binding"
+          test -n "$dataset_binding"
+          test "$model_binding" != "$dataset_binding"
+          model_role=$(kubectl get clusterrolebinding "$model_binding" -o jsonpath='{.roleRef.name}')
+          dataset_role=$(kubectl get clusterrolebinding "$dataset_binding" -o jsonpath='{.roleRef.name}')
           sa=$(kubectl -n cubeface get deployment cubeface \
             -o jsonpath='{.spec.template.spec.serviceAccountName}')
-          echo "removing $binding (role $role, service account $sa)"
-          kubectl delete clusterrolebinding "$binding"
+          echo "removing $model_binding (role $model_role) and $dataset_binding (role $dataset_role)"
+          kubectl delete clusterrolebinding "$model_binding" "$dataset_binding"
 
           # Cached data stays available for the stale window, so allow enough
           # time for that window to expire before requiring FORBIDDEN.
           for i in $(seq 1 120); do
             curl -fsS http://127.0.0.1:3000/api/models > /tmp/models-forbidden.json || true
-            if jq -e '.data.available == false and .data.reason == "FORBIDDEN"' /tmp/models-forbidden.json >/dev/null 2>&1; then
+            curl -fsS http://127.0.0.1:3000/api/datasets > /tmp/datasets-forbidden.json || true
+            if jq -e '.data.available == false and .data.reason == "FORBIDDEN"' /tmp/models-forbidden.json >/dev/null 2>&1 &&
+               jq -e '.data.available == false and .data.reason == "FORBIDDEN"' /tmp/datasets-forbidden.json >/dev/null 2>&1; then
               break
             fi
             if [ "$i" -eq 120 ]; then
-              echo "model catalog did not report FORBIDDEN without RBAC"
+              echo "catalogs did not report FORBIDDEN without RBAC"
               cat /tmp/models-forbidden.json || true
+              cat /tmp/datasets-forbidden.json || true
               exit 1
             fi
             sleep 2
           done
           cat /tmp/models-forbidden.json | jq .
+          cat /tmp/datasets-forbidden.json | jq .
           jq -e '
             .success == true and
             .data.available == false and
@@ -477,20 +647,33 @@ jobs:
             .data.retryable == true and
             (.data.models | length) == 0
           ' /tmp/models-forbidden.json >/dev/null
+          jq -e '
+            .success == true and
+            .data.available == false and
+            .data.reason == "FORBIDDEN" and
+            .data.retryable == true and
+            (.data.datasets | length) == 0
+          ' /tmp/datasets-forbidden.json >/dev/null
 
-          kubectl create clusterrolebinding "$binding" \
-            --clusterrole="$role" \
+          kubectl create clusterrolebinding "$model_binding" \
+            --clusterrole="$model_role" \
+            --serviceaccount="cubeface:$sa"
+          kubectl create clusterrolebinding "$dataset_binding" \
+            --clusterrole="$dataset_role" \
             --serviceaccount="cubeface:$sa"
 
-          # And the catalog recovers once access is restored.
+          # And both catalogs recover once access is restored.
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:3000/api/models > /tmp/models-restored.json || true
-            if jq -e '.data.available == true and .data.total == 1' /tmp/models-restored.json >/dev/null 2>&1; then
+            curl -fsS http://127.0.0.1:3000/api/datasets > /tmp/datasets-restored.json || true
+            if jq -e '.data.available == true and .data.total == 1' /tmp/models-restored.json >/dev/null 2>&1 &&
+               jq -e '.data.available == true and .data.total == 1' /tmp/datasets-restored.json >/dev/null 2>&1; then
               break
             fi
             if [ "$i" -eq 60 ]; then
-              echo "model catalog did not recover after RBAC was restored"
+              echo "catalogs did not recover after RBAC was restored"
               cat /tmp/models-restored.json || true
+              cat /tmp/datasets-restored.json || true
               exit 1
             fi
             sleep 2

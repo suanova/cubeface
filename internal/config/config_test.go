@@ -21,6 +21,10 @@ var envKeys = []string{
 	"OIDC_ISSUER_URL", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_DISPLAY_NAME", "OIDC_SCOPES",
 	"OAUTH_REDIRECT_BASE",
 	"LOGIN_RATE_LIMIT_PER_MINUTE", "REGISTER_RATE_LIMIT_PER_HOUR",
+	"MODEL_LIBRARY_ENABLED", "MODEL_LIBRARY_API_URL",
+	"MODEL_LIBRARY_CACHE_TTL_SECONDS", "MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS",
+	"DATASET_LIBRARY_ENABLED", "DATASET_LIBRARY_API_URL",
+	"DATASET_LIBRARY_CACHE_TTL_SECONDS", "DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS",
 }
 
 func clearEnv(t *testing.T) {
@@ -54,6 +58,40 @@ func TestLoadDevelopmentDefaults(t *testing.T) {
 	}
 	if got := cfg.FrontendPath("/dashboard"); got != "/dashboard" {
 		t.Fatalf("frontend path = %q", got)
+	}
+}
+
+func TestDatasetLibraryConfig(t *testing.T) {
+	clearEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.DatasetLibraryEnabled || cfg.DatasetLibraryAPIURL != "" {
+		t.Fatalf("dataset defaults = %+v", cfg)
+	}
+	if cfg.DatasetLibraryCacheTTL.Seconds() != 30 || cfg.DatasetLibraryTimeout.Seconds() != 5 {
+		t.Fatalf("dataset durations = %s/%s", cfg.DatasetLibraryCacheTTL, cfg.DatasetLibraryTimeout)
+	}
+
+	t.Setenv("DATASET_LIBRARY_ENABLED", "false")
+	t.Setenv("DATASET_LIBRARY_API_URL", "http://127.0.0.1:8001/")
+	t.Setenv("DATASET_LIBRARY_CACHE_TTL_SECONDS", "45")
+	t.Setenv("DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS", "8")
+
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.DatasetLibraryEnabled {
+		t.Fatal("DATASET_LIBRARY_ENABLED=false was ignored")
+	}
+	if cfg.DatasetLibraryAPIURL != "http://127.0.0.1:8001" {
+		t.Fatalf("dataset API URL = %q", cfg.DatasetLibraryAPIURL)
+	}
+	if cfg.DatasetLibraryCacheTTL.Seconds() != 45 || cfg.DatasetLibraryTimeout.Seconds() != 8 {
+		t.Fatalf("dataset durations = %s/%s", cfg.DatasetLibraryCacheTTL, cfg.DatasetLibraryTimeout)
 	}
 }
 

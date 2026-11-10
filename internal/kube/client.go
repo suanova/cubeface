@@ -24,6 +24,7 @@ const (
 
 	modelVersionPath   = "/apis/ai.cubestack.io/v1alpha1/modelversions"
 	runtimeProfilePath = "/apis/ai.cubestack.io/v1alpha1/inferenceruntimeprofiles"
+	datasetPath        = "/apis/ai.cubestack.io/v1alpha1/datasets"
 
 	pageLimit   = 500
 	maxPages    = 20
@@ -50,10 +51,11 @@ func (e *StatusError) Error() string {
 	return fmt.Sprintf("kubernetes API: %s: %s", e.Reason, e.detail)
 }
 
-// Source is the read-only view of the CubeStack CRDs used by the catalog.
+// Source is the read-only view of the CubeStack CRDs used by the catalogs.
 type Source interface {
 	ListModelVersions(ctx context.Context) ([]ModelVersion, error)
 	ListRuntimeProfiles(ctx context.Context) ([]RuntimeProfile, error)
+	ListDatasets(ctx context.Context) ([]Dataset, error)
 }
 
 // Client lists cluster-scoped CubeStack custom resources over the Kubernetes
@@ -110,10 +112,10 @@ func NewInClusterClient(timeout time.Duration) (*Client, error) {
 func NewAPIClient(rawURL string, timeout time.Duration) (*Client, error) {
 	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(rawURL), "/"))
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return nil, fmt.Errorf("MODEL_LIBRARY_API_URL must be an absolute URL")
+		return nil, fmt.Errorf("the Kubernetes API URL must be an absolute URL")
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return nil, fmt.Errorf("MODEL_LIBRARY_API_URL must use http or https")
+		return nil, fmt.Errorf("the Kubernetes API URL must use http or https")
 	}
 	return &Client{
 		baseURL: parsed.String(),
@@ -129,6 +131,10 @@ func (c *Client) ListModelVersions(ctx context.Context) ([]ModelVersion, error) 
 
 func (c *Client) ListRuntimeProfiles(ctx context.Context) ([]RuntimeProfile, error) {
 	return listAll[RuntimeProfile](ctx, c, runtimeProfilePath)
+}
+
+func (c *Client) ListDatasets(ctx context.Context) ([]Dataset, error) {
+	return listAll[Dataset](ctx, c, datasetPath)
 }
 
 func listAll[T any](ctx context.Context, c *Client, path string) ([]T, error) {

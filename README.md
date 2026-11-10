@@ -1,6 +1,6 @@
 # CubeFace
 
-CubeFace 是一个面向 AI 模型的托管与分享平台（目标类似 Hugging Face / ModelScope）。当前是第一个可运行版本：**账号体系完整闭环**，并带有一个只读的模型库（数据来自 CubeStack 集群 CRD）；模型上传、评测与在线推理尚未实现，首页内容暂留空。
+CubeFace 是一个面向 AI 模型的托管与分享平台（目标类似 Hugging Face / ModelScope）。当前是第一个可运行版本：**账号体系完整闭环**，并带有只读的模型库与数据集库（数据来自 CubeStack 集群 CRD）；模型上传、评测与在线推理尚未实现，首页内容暂留空。
 
 ## 当前功能
 
@@ -10,6 +10,7 @@ CubeFace 是一个面向 AI 模型的托管与分享平台（目标类似 Huggin
 - 数据库会话：随机不透明令牌放在 HttpOnly Cookie，数据库只存 HMAC 哈希；支持滑动续期、会话吊销、`auth_version` 全量失效
 - 完整账号界面（登录、注册、OAuth、仪表盘）与中英双语、亮/暗主题
 - 模型库列表 `/models` 与详情 `/models/$name`：直接读取 CubeStack `ModelVersion` / `InferenceRuntimeProfile`，展示模型卡、存储摘要、兼容运行时与全部版本；集群不可用时优雅降级
+- 数据集库列表 `/datasets` 与详情 `/datasets/$name`：读取 CubeStack `Dataset`，按语义名合并版本，展示格式、体积、记录数、版本与访问/去标识化/伦理等边界信息；与模型库独立降级
 - 首页内容暂留空，仅保留站点导航
 - 生产模式由 Go 二进制内嵌前端静态资源，并支持部署在子路径（`BASE_PATH`）
 
@@ -141,7 +142,7 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 1. `helm lint` 并渲染托管 PostgreSQL、SQLite、外部 DSN、外部 Secret、备份/PgBouncer 场景，拒绝不安全配置；
 2. 构建镜像并加载到 KinD；
 3. 以 `database.mode=postgres` 安装 Chart，由 Chart 自带的 CloudNativePG operator 创建 3 实例 PostgreSQL 集群；
-4. 应用 `hack/kind` 下的最小 CubeStack CRD 与测试对象，验证 `/api/models` 能读到 CR、合并同名版本、应用注解并脱敏存储信息；删除模型库 `ClusterRoleBinding` 后验证接口降级为 `FORBIDDEN`，恢复后重新可用；
+4. 应用 `hack/kind` 下的最小 CubeStack CRD 与测试对象，验证 `/api/models` 与 `/api/datasets` 能读到 CR、合并同名版本、应用注解并脱敏存储信息；删除两个目录各自的 `ClusterRoleBinding` 后验证接口分别降级为 `FORBIDDEN`，恢复后重新可用；
 5. 通过 `/healthz`、`/api/status`、注册、登录、`/api/user/self` 验证可访问性；
 6. 直接查询 PostgreSQL 主库确认账号与会话确实写入数据库；
 7. 删除主库 Pod 触发自动故障切换，验证新主库选举成功且 CubeFace 恢复服务。
@@ -175,6 +176,10 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 | `MODEL_LIBRARY_CACHE_TTL_SECONDS` | `30` | 模型目录快照缓存 TTL |
 | `MODEL_LIBRARY_REQUEST_TIMEOUT_SECONDS` | `5` | 单次读取 Kubernetes API 的超时 |
 | `MODEL_LIBRARY_API_URL` | 空 | 本地开发指向 `kubectl proxy`；留空则使用集群内 ServiceAccount |
+| `DATASET_LIBRARY_ENABLED` | `true` | 数据集库开关；关闭后接口返回 `available:false, reason:"DISABLED"` |
+| `DATASET_LIBRARY_CACHE_TTL_SECONDS` | `30` | 数据集目录快照缓存 TTL |
+| `DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS` | `5` | 单次读取 Dataset CRD 的超时 |
+| `DATASET_LIBRARY_API_URL` | 空 | 为空时回退 `MODEL_LIBRARY_API_URL` |
 
 数据库在启动时通过 GORM `AutoMigrate` 自动建表；SQLite 默认开启 WAL 与 `busy_timeout`，并将连接数限制为 1（仅适合单实例）。
 
@@ -227,6 +232,38 @@ curl -s localhost:3000/api/models | jq '.data.available, .data.total'
 
 Helm Chart 默认创建 ServiceAccount（`serviceAccount.create=true`）和一个只读 ClusterRole/ClusterRoleBinding（`modelLibrary.rbac.create=true`），仅授予 `ai.cubestack.io` 下 `modelversions`、`inferenceruntimeprofiles` 的 `list` 权限；CRD 是集群级资源，因此必须用 ClusterRole。不需要模型库时用 `--set modelLibrary.enabled=false` 关闭页面数据与 RBAC；自行管理权限时用 `--set modelLibrary.rbac.create=false`。
 
+## 数据集库（CubeStack）
+
+`/datasets` 与 `/datasets/$name` 读取集群里的 `datasets.ai.cubestack.io/v1alpha1`：
+
+- `Dataset`：按 `spec.dataset` 分组，同一数据集的多个 `spec.version` 合并为一条记录；版本按自然序降序。
+- 结构化字段来自 spec：`format`、`size`、`recordCount`、`storage`；展示字段来自注解（取最新版本）：
+
+| 注解 | 用途 |
+|---|---|
+| `ai.cubestack.io/description` | 数据集简介 |
+| `cubeface.io/display-name` | 展示名，回退 `spec.dataset` |
+| `cubeface.io/publisher` | 发布者 |
+| `cubeface.io/task` | 任务类型（筛选项） |
+| `cubeface.io/license` | 许可证 |
+| `cubeface.io/tags` | 逗号分隔标签 |
+| `cubeface.io/access` | 获取方式（如 public / gated） |
+| `cubeface.io/deidentification` | 去标识化说明 |
+| `cubeface.io/ethics` | 伦理依据 |
+| `cubeface.io/source-repo` | 来源仓库 |
+| `cubeface.io/usage-boundary` | 使用边界提示 |
+| `cubeface.io/featured` | `"true"` 时作为精选 |
+
+存储脱敏规则与模型库一致：不下发 `storage.hostPath.path`、`storage.s3.uri`、`credentialsRef.name`。数据集目录有独立的缓存与开关（`DATASET_LIBRARY_*`），datasets CRD 缺失不会影响 `/api/models`，反之亦然；不可用时返回 200 + `available:false`，健康但名称不存在时返回 404 `DATASET_NOT_FOUND`。
+
+```bash
+kubectl proxy --port=8001
+DATASET_LIBRARY_API_URL=http://127.0.0.1:8001 go run .
+curl -s localhost:3000/api/datasets | jq '.data.available, .data.total'
+```
+
+Helm Chart 为数据集库单独创建只读 ClusterRole/ClusterRoleBinding，仅授予 `datasets` 的 `list` 权限（`datasetLibrary.*`，与模型库互不影响）。
+
 ## API 概览
 
 响应统一为：
@@ -251,6 +288,8 @@ Helm Chart 默认创建 ServiceAccount（`serviceAccount.create=true`）和一�
 | `GET` | `/api/oauth/:provider/callback` | OAuth 回调 |
 | `GET` | `/api/models` | 模型库列表（公开；集群异常时 200 + `available:false`） |
 | `GET` | `/api/models/:name` | 模型详情（`spec.model` 或 `ModelVersion.metadata.name`；不存在 404） |
+| `GET` | `/api/datasets` | 数据集库列表（公开；集群异常时 200 + `available:false`） |
+| `GET` | `/api/datasets/:name` | 数据集详情（`spec.dataset` 或 `Dataset.metadata.name`；不存在 404 `DATASET_NOT_FOUND`） |
 
 ## 测试
 
@@ -261,7 +300,8 @@ make check      # go vet + tsc + tests
 
 - 后端集成测试使用临时 SQLite，覆盖注册/登录/登出、验证码、会话失效与滑动续期、同源校验、OAuth 错误跳转、子路径部署。
 - 模型目录测试覆盖版本分组与自然排序、注解回退、兼容规则、存储脱敏、TTL/负缓存/stale 降级与 CRD 错误分类。
-- 前端测试覆盖安全跳转、表单校验规则、品牌组件，以及模型筛选/排序与搜索参数解析。
+- 数据集目录测试覆盖语义分组、版本排序、注解回退、存储脱敏，以及独立缓存与降级路径。
+- 前端测试覆盖安全跳转、表单校验规则、品牌组件，以及模型/数据集的筛选、排序与搜索参数解析。
 - PostgreSQL 可通过 `SQL_DSN=postgres://... go run .` 手动验证；自动化测试目前只使用 SQLite。
 
 ## 安全说明

@@ -87,6 +87,23 @@ type ModelVersionStatus struct {
 	Conditions []Condition `json:"conditions,omitempty"`
 }
 
+// Dataset decodes a CubeStack Dataset. The CRD is a registry entry and has no
+// status subresource, so only metadata and spec are read.
+type Dataset struct {
+	Metadata ObjectMeta  `json:"metadata"`
+	Spec     DatasetSpec `json:"spec"`
+}
+
+type DatasetSpec struct {
+	Dataset     string            `json:"dataset"`
+	Version     string            `json:"version"`
+	Format      string            `json:"format"`
+	Size        string            `json:"size,omitempty"`
+	RecordCount *int64            `json:"recordCount,omitempty"`
+	Meta        map[string]string `json:"meta,omitempty"`
+	Storage     ModelStorage      `json:"storage"`
+}
+
 type RuntimeProfile struct {
 	Metadata ObjectMeta         `json:"metadata"`
 	Spec     RuntimeProfileSpec `json:"spec"`

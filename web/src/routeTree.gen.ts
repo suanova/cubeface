@@ -14,15 +14,17 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as DatasetsRouteImport } from './routes/datasets'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as ModelsRouteImport } from './routes/models'
-import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RankingsRouteImport } from './routes/rankings'
 import { Route as UserAgreementRouteImport } from './routes/user-agreement'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as authSignUpRouteImport } from './routes/(auth)/sign-up'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as DatasetsIndexRouteImport } from './routes/datasets.index'
+import { Route as DatasetsNameRouteImport } from './routes/datasets.$name'
 import { Route as ModelsIndexRouteImport } from './routes/models.index'
 import { Route as ModelsNameRouteImport } from './routes/models.$name'
 
@@ -49,6 +51,11 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DatasetsRoute = DatasetsRouteImport.update({
+  id: '/datasets',
+  path: '/datasets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
@@ -57,11 +64,6 @@ const DocsRoute = DocsRouteImport.update({
 const ModelsRoute = ModelsRouteImport.update({
   id: '/models',
   path: '/models',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
@@ -94,6 +96,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const DatasetsIndexRoute = DatasetsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DatasetsRoute,
+} as any)
+const DatasetsNameRoute = DatasetsNameRouteImport.update({
+  id: '/$name',
+  path: '/$name',
+  getParentRoute: () => DatasetsRoute,
+} as any)
 const ModelsIndexRoute = ModelsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,16 +121,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/datasets': typeof DatasetsRouteWithChildren
   '/docs': typeof DocsRoute
   '/models': typeof ModelsRouteWithChildren
-  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/datasets/$name': typeof DatasetsNameRoute
   '/models/$name': typeof ModelsNameRoute
+  '/datasets/': typeof DatasetsIndexRoute
   '/models/': typeof ModelsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -126,14 +140,15 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
   '/docs': typeof DocsRoute
-  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/datasets/$name': typeof DatasetsNameRoute
   '/models/$name': typeof ModelsNameRoute
+  '/datasets': typeof DatasetsIndexRoute
   '/models': typeof ModelsIndexRoute
 }
 export interface FileRoutesById {
@@ -143,16 +158,18 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/datasets': typeof DatasetsRouteWithChildren
   '/docs': typeof DocsRoute
   '/models': typeof ModelsRouteWithChildren
-  '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/rankings': typeof RankingsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/(auth)/sign-in': typeof authSignInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/datasets/$name': typeof DatasetsNameRoute
   '/models/$name': typeof ModelsNameRoute
+  '/datasets/': typeof DatasetsIndexRoute
   '/models/': typeof ModelsIndexRoute
 }
 export interface FileRouteTypes {
@@ -161,16 +178,18 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/datasets'
     | '/docs'
     | '/models'
-    | '/pricing'
     | '/privacy-policy'
     | '/rankings'
     | '/user-agreement'
     | '/sign-in'
     | '/sign-up'
     | '/dashboard'
+    | '/datasets/$name'
     | '/models/$name'
+    | '/datasets/'
     | '/models/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -178,14 +197,15 @@ export interface FileRouteTypes {
     | '/$'
     | '/about'
     | '/docs'
-    | '/pricing'
     | '/privacy-policy'
     | '/rankings'
     | '/user-agreement'
     | '/sign-in'
     | '/sign-up'
     | '/dashboard'
+    | '/datasets/$name'
     | '/models/$name'
+    | '/datasets'
     | '/models'
   id:
     | '__root__'
@@ -194,16 +214,18 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/$'
     | '/about'
+    | '/datasets'
     | '/docs'
     | '/models'
-    | '/pricing'
     | '/privacy-policy'
     | '/rankings'
     | '/user-agreement'
     | '/(auth)/sign-in'
     | '/(auth)/sign-up'
     | '/_authenticated/dashboard'
+    | '/datasets/$name'
     | '/models/$name'
+    | '/datasets/'
     | '/models/'
   fileRoutesById: FileRoutesById
 }
@@ -213,9 +235,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
+  DatasetsRoute: typeof DatasetsRouteWithChildren
   DocsRoute: typeof DocsRoute
   ModelsRoute: typeof ModelsRouteWithChildren
-  PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RankingsRoute: typeof RankingsRoute
   UserAgreementRoute: typeof UserAgreementRoute
@@ -258,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/datasets': {
+      id: '/datasets'
+      path: '/datasets'
+      fullPath: '/datasets'
+      preLoaderRoute: typeof DatasetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs': {
       id: '/docs'
       path: '/docs'
@@ -270,13 +299,6 @@ declare module '@tanstack/react-router' {
       path: '/models'
       fullPath: '/models'
       preLoaderRoute: typeof ModelsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy-policy': {
@@ -321,6 +343,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/datasets/': {
+      id: '/datasets/'
+      path: '/'
+      fullPath: '/datasets/'
+      preLoaderRoute: typeof DatasetsIndexRouteImport
+      parentRoute: typeof DatasetsRoute
+    }
+    '/datasets/$name': {
+      id: '/datasets/$name'
+      path: '/$name'
+      fullPath: '/datasets/$name'
+      preLoaderRoute: typeof DatasetsNameRouteImport
+      parentRoute: typeof DatasetsRoute
+    }
     '/models/': {
       id: '/models/'
       path: '/'
@@ -363,6 +399,20 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface DatasetsRouteChildren {
+  DatasetsNameRoute: typeof DatasetsNameRoute
+  DatasetsIndexRoute: typeof DatasetsIndexRoute
+}
+
+const DatasetsRouteChildren: DatasetsRouteChildren = {
+  DatasetsNameRoute: DatasetsNameRoute,
+  DatasetsIndexRoute: DatasetsIndexRoute,
+}
+
+const DatasetsRouteWithChildren = DatasetsRoute._addFileChildren(
+  DatasetsRouteChildren,
+)
+
 interface ModelsRouteChildren {
   ModelsNameRoute: typeof ModelsNameRoute
   ModelsIndexRoute: typeof ModelsIndexRoute
@@ -382,9 +432,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
+  DatasetsRoute: DatasetsRouteWithChildren,
   DocsRoute: DocsRoute,
   ModelsRoute: ModelsRouteWithChildren,
-  PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   RankingsRoute: RankingsRoute,
   UserAgreementRoute: UserAgreementRoute,

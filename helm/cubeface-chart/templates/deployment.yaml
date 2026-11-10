@@ -49,8 +49,9 @@ spec:
       {{- with (include "cubeface.serviceAccountName" .) }}
       serviceAccountName: {{ . | quote }}
       {{- end }}
-      {{- if .Values.modelLibrary.enabled }}
-      # The model library reads CubeStack custom resources with this token.
+      {{- if or .Values.modelLibrary.enabled .Values.datasetLibrary.enabled }}
+      # The model and dataset libraries read CubeStack custom resources with
+      # this token.
       automountServiceAccountToken: true
       {{- end }}
       {{- if and .Values.podAntiAffinity (gt $replicas 1) }}

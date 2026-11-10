@@ -44,12 +44,14 @@ func main() {
 	users := service.NewUserService(cfg, sessions, verification)
 	oauth := service.NewOAuthService(cfg, users, sessions)
 	catalog := service.NewModelCatalog(cfg, newCatalogSource(cfg))
+	datasetCatalog := service.NewDatasetCatalog(cfg, newDatasetSource(cfg))
 
 	userController := controller.NewUserController(cfg, users, sessions)
 	verificationController := controller.NewVerificationController(verification)
 	oauthController := controller.NewOAuthController(cfg, oauth, sessions)
 	statusController := controller.NewStatusController(cfg, oauth)
 	modelController := controller.NewModelController(catalog)
+	datasetController := controller.NewDatasetController(datasetCatalog)
 
 	engine := router.New(router.Deps{
 		Config:       cfg,
@@ -58,6 +60,7 @@ func main() {
 		OAuth:        oauthController,
 		Status:       statusController,
 		Models:       modelController,
+		Datasets:     datasetController,
 		Sessions:     sessions,
 		Static:       webDist,
 	})
@@ -81,6 +84,15 @@ func main() {
 		}
 	} else {
 		log.Printf("model library: disabled")
+	}
+	if cfg.DatasetLibraryEnabled {
+		if url := datasetAPIURL(cfg); url != "" {
+			log.Printf("dataset library: using Kubernetes API at %s", url)
+		} else {
+			log.Printf("dataset library: using in-cluster service account")
+		}
+	} else {
+		log.Printf("dataset library: disabled")
 	}
 
 	server := &http.Server{
@@ -127,6 +139,37 @@ func newCatalogSource(cfg *config.Config) kube.Source {
 	client, err := kube.NewInClusterClient(cfg.ModelLibraryTimeout)
 	if err != nil {
 		log.Printf("WARN model library: %v", err)
+		return kube.NoClusterSource
+	}
+	return client
+}
+
+// datasetAPIURL returns the explicit dataset-library API URL, falling back to
+// the model-library URL so one local `kubectl proxy` serves both catalogs.
+func datasetAPIURL(cfg *config.Config) string {
+	if cfg.DatasetLibraryAPIURL != "" {
+		return cfg.DatasetLibraryAPIURL
+	}
+	return cfg.ModelLibraryAPIURL
+}
+
+// newDatasetSource chooses the dataset-library data source. No configuration
+// error is fatal: the page degrades to an unavailable state instead.
+func newDatasetSource(cfg *config.Config) kube.Source {
+	if !cfg.DatasetLibraryEnabled {
+		return kube.UnavailableSource{Reason: service.CatalogDisabled, Retryable: false}
+	}
+	if url := datasetAPIURL(cfg); url != "" {
+		client, err := kube.NewAPIClient(url, cfg.DatasetLibraryTimeout)
+		if err != nil {
+			log.Printf("WARN dataset library: %v", err)
+			return kube.NoClusterSource
+		}
+		return client
+	}
+	client, err := kube.NewInClusterClient(cfg.DatasetLibraryTimeout)
+	if err != nil {
+		log.Printf("WARN dataset library: %v", err)
 		return kube.NoClusterSource
 	}
 	return client

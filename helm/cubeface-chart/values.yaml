@@ -47,6 +47,22 @@ modelLibrary:
   cacheTTLSeconds: 30
   requestTimeoutSeconds: 5
 
+# ---------------------------------------------------------------------------
+# Dataset library
+#
+# Lists CubeStack Dataset custom resources. It is independent of the model
+# library: its own switch, its own read-only ClusterRole and its own cache, so
+# a missing datasets CRD never affects /api/models (and vice versa).
+# ---------------------------------------------------------------------------
+datasetLibrary:
+  enabled: true
+  rbac:
+    # Cluster-scoped read-only ClusterRole and ClusterRoleBinding, like the
+    # model library. Set to false when you already grant list access yourself.
+    create: true
+  cacheTTLSeconds: 30
+  requestTimeoutSeconds: 5
+
 # Keep at 1 with SQLite: a SQLite file cannot be shared between pods. The
 # chart rejects replicaCount > 1 in SQLite mode. PostgreSQL modes can scale.
 replicaCount: 1

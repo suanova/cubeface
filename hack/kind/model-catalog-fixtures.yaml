@@ -1,9 +1,14 @@
-# CubeStack objects used by the KinD workflow to verify the model library
-# against a real Kubernetes API server. Apply model-catalog-crds.yaml first.
+# CubeStack objects used by the KinD workflow to verify the model and dataset
+# libraries against a real Kubernetes API server. Apply
+# model-catalog-crds.yaml first.
 #
 # The two ModelVersions share spec.model, so the catalog must collapse them
 # into one entry, prefer the annotations of the newest version and report both
 # versions as compatible with demo-qwen-bf16.
+#
+# The two Datasets share spec.dataset, so /api/datasets must collapse them the
+# same way: latest v1.1.0, version_count 2, cluster-scoped lookups by either
+# the semantic name or a metadata.name.
 apiVersion: ai.cubestack.io/v1alpha1
 kind: ModelVersion
 metadata:
@@ -101,3 +106,52 @@ status:
     - type: AssetsResolved
       status: "True"
       lastTransitionTime: "2026-01-03T00:20:00Z"
+---
+apiVersion: ai.cubestack.io/v1alpha1
+kind: Dataset
+metadata:
+  name: demo-dataset-v1-0-0
+  annotations:
+    ai.cubestack.io/description: First fixture version of the demo dataset.
+spec:
+  dataset: demo-dataset
+  version: v1.0.0
+  format: Parquet
+  size: 1.0Gi
+  recordCount: 100000
+  storage:
+    strategy: HostPath
+    hostPath:
+      path: /var/lib/cubestack/secret-root/demo-dataset
+---
+apiVersion: ai.cubestack.io/v1alpha1
+kind: Dataset
+metadata:
+  name: demo-dataset-v1-1-0
+  annotations:
+    cubeface.io/display-name: Demo Dataset
+    cubeface.io/publisher: CubeFace CI
+    cubeface.io/task: sft
+    cubeface.io/license: CC-BY-4.0
+    cubeface.io/tags: demo, parquet
+    cubeface.io/access: public
+    cubeface.io/deidentification: PII removed
+    cubeface.io/ethics: Internal review
+    cubeface.io/source-repo: https://example.com/demo-dataset
+    cubeface.io/usage-boundary: CI fixture only
+    cubeface.io/featured: "true"
+    ai.cubestack.io/description: Fixture dataset backed by two Dataset versions.
+spec:
+  dataset: demo-dataset
+  version: v1.1.0
+  format: Parquet
+  size: 1.2Gi
+  recordCount: 120000
+  meta:
+    language: en
+  storage:
+    strategy: S3
+    s3:
+      uri: s3://internal-bucket/secret-prefix/demo-dataset
+      credentialsRef:
+        name: internal-credentials
