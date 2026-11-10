@@ -116,20 +116,22 @@ func (h *handler) serveIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// injectBasePath writes a <base> tag and window.__BASE_PATH__ into the SPA
-// shell so the same frontend build works at the site root or behind a path
-// prefix. json.Marshal escapes quotes, angle brackets and ampersands, so the
-// value cannot terminate the inline script; the href is HTML-escaped too.
+// injectBasePath writes a <base> tag and, behind a path prefix,
+// window.__BASE_PATH__ into the SPA shell so the same frontend build works at
+// the site root or behind a prefix. The <base> tag is always emitted: the
+// built HTML references static assets relatively, so without it a deep link
+// such as /datasets/demo-dataset would resolve them under /datasets/.
+// json.Marshal escapes quotes, angle brackets and ampersands, so the value
+// cannot terminate the inline script; the href is HTML-escaped too.
 func injectBasePath(index []byte, basePath string) []byte {
-	if basePath == "" {
-		return index
+	tag := "<base href=\"" + html.EscapeString(basePath+"/") + "\">"
+	if basePath != "" {
+		encoded, err := json.Marshal(basePath)
+		if err != nil {
+			return index
+		}
+		tag += "<script>window.__BASE_PATH__=" + string(encoded) + ";</script>"
 	}
-	encoded, err := json.Marshal(basePath)
-	if err != nil {
-		return index
-	}
-	tag := "<base href=\"" + html.EscapeString(basePath+"/") + "\">" +
-		"<script>window.__BASE_PATH__=" + string(encoded) + ";</script>"
 	snippet := []byte("<head>" + tag)
 	if bytes.Contains(index, []byte("<head>")) {
 		return bytes.Replace(index, []byte("<head>"), snippet, 1)

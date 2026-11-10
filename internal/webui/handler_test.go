@@ -40,7 +40,9 @@ func TestServesSPAAndAssets(t *testing.T) {
 	if cc := rec.Header().Get("Cache-Control"); cc != "no-store" {
 		t.Fatalf("index cache control = %q", cc)
 	}
-	if got := rec.Body.String(); !strings.Contains(got, "CubeFace") || strings.Contains(got, "<base") {
+	if got := rec.Body.String(); !strings.Contains(got, "CubeFace") ||
+		!strings.Contains(got, `<base href="/">`) ||
+		strings.Contains(got, "window.__BASE_PATH__") {
 		t.Fatalf("unexpected index body: %s", got)
 	}
 
@@ -149,8 +151,9 @@ func TestInjectBasePathEdgeCases(t *testing.T) {
 		t.Fatalf("unexpected injection: %s", got)
 	}
 
-	// Empty base path is a no-op.
-	if got := injectBasePath([]byte("<head></head>"), ""); string(got) != "<head></head>" {
+	// An empty base path still gets a root-relative <base> so deep links keep
+	// loading the fingerprint-named assets, but no base path global.
+	if got := string(injectBasePath([]byte("<head></head>"), "")); got != `<head><base href="/"></head>` {
 		t.Fatalf("unexpected empty base injection: %s", got)
 	}
 
