@@ -472,7 +472,7 @@ jobs:
             .data.models[0].model == "demo-model" and
             .data.models[0].display_name == "Demo Model" and
             .data.models[0].publisher == "MedRouter CI" and
-            .data.models[0].publisher_initials == "CC" and
+            .data.models[0].publisher_initials == "MC" and
             .data.models[0].license == "Apache-2.0" and
             .data.models[0].task == "chat" and
             .data.models[0].featured == true and
@@ -547,7 +547,7 @@ jobs:
             .data.datasets[0].dataset == "demo-dataset" and
             .data.datasets[0].display_name == "Demo Dataset" and
             .data.datasets[0].publisher == "MedRouter CI" and
-            .data.datasets[0].publisher_initials == "CC" and
+            .data.datasets[0].publisher_initials == "MC" and
             .data.datasets[0].format == "Parquet" and
             .data.datasets[0].task == "sft" and
             .data.datasets[0].license == "CC-BY-4.0" and
