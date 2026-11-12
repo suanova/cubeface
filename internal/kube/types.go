@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// The types in this file decode only the fields CubeFace needs from the
+// The types in this file decode only the fields MedRouter needs from the
 // CubeStack CRDs. They are deliberately not the operator's generated types:
 // the model library must not depend on k8s.io/apimachinery.
 

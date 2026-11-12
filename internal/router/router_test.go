@@ -15,12 +15,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/controller"
-	"github.com/cubeface/cubeface/internal/model"
-	"github.com/cubeface/cubeface/internal/router"
-	"github.com/cubeface/cubeface/internal/service"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/controller"
+	"github.com/suanova/medrouter/internal/model"
+	"github.com/suanova/medrouter/internal/router"
+	"github.com/suanova/medrouter/internal/service"
 )
 
 type envelope struct {
@@ -53,16 +53,16 @@ func baseConfig(t *testing.T) *config.Config {
 	t.Helper()
 	return &config.Config{
 		AppEnv:               "test",
-		SystemName:           "CubeFace",
+		SystemName:           "MedRouter",
 		Version:              "test",
 		PublicOrigin:         "http://example.test",
 		SessionSecret:        "test-session-secret-with-enough-entropy",
-		SessionCookieName:    "cubeface_session",
+		SessionCookieName:    "medrouter_session",
 		SessionTTL:           24 * time.Hour,
 		SessionTouchInterval: time.Hour,
 
 		RegisterEnabled: true,
-		SQLitePath:      filepath.Join(t.TempDir(), "cubeface.db"),
+		SQLitePath:      filepath.Join(t.TempDir(), "medrouter.db"),
 		DBMaxOpenConns:  1,
 
 		EmailVerificationEnabled: false,
@@ -577,8 +577,8 @@ func TestOAuthDisabledProviderRedirects(t *testing.T) {
 
 func TestBasePathAPIAndOAuthRedirect(t *testing.T) {
 	app := newTestApp(t, func(c *config.Config) {
-		c.BasePath = "/cubeface"
-		c.PublicOrigin = "http://example.test/cubeface"
+		c.BasePath = "/medrouter"
+		c.PublicOrigin = "http://example.test/medrouter"
 	})
 
 	resp, env := app.request(http.MethodGet, "/api/status", nil)
@@ -595,7 +595,7 @@ func TestBasePathAPIAndOAuthRedirect(t *testing.T) {
 	if resp.StatusCode != http.StatusFound {
 		t.Fatalf("oauth start status = %d", resp.StatusCode)
 	}
-	if location := resp.Header.Get("Location"); !strings.HasPrefix(location, "/cubeface/sign-in?oauth_error=") {
+	if location := resp.Header.Get("Location"); !strings.HasPrefix(location, "/medrouter/sign-in?oauth_error=") {
 		t.Fatalf("base path redirect = %q", location)
 	}
 }

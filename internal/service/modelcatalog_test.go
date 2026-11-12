@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 func testModelVersion(name, model, version, arch, quant string, created time.Time, ann map[string]string) kube.ModelVersion {

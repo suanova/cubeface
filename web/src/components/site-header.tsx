@@ -30,7 +30,7 @@ export function SiteHeader() {
           <span className='site-brand-mark' aria-hidden='true'>
             <BrandLogo showWordmark={false} />
           </span>
-          <span className='site-brand-name'>CubeFace</span>
+          <span className='site-brand-name'>MedRouter</span>
           <span className='site-brand-sub'>{t('brandSub')}</span>
         </Link>
 

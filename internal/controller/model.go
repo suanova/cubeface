@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/service"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/service"
 )
 
 type ModelController struct {

@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cubeface.fullname" . }}
+  name: {{ include "medrouter.fullname" . }}
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 4 }}
+    {{- include "medrouter.selectorLabels" (dict "root" . "component" "app") | nindent 4 }}
   ports:
     - name: http
       port: {{ .Values.service.port }}

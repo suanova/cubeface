@@ -4,7 +4,7 @@
  * The layout follows the StarStack model-hub mockup (page head, inverted
  * spotlight, 216px filter rail, 3-column cards, detail grid with side cards).
  * Every rule is scoped to .ml-scope and every class is ml-prefixed so the rest
- * of CubeFace is untouched. Colors and fonts come from the CubeFace theme tokens.
+ * of MedRouter is untouched. Colors and fonts come from the MedRouter theme tokens.
  */
 
 .ml-scope {

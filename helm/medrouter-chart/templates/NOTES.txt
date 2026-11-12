@@ -1,8 +1,8 @@
-{{- $fullname := include "cubeface.fullname" . -}}
-{{- $base := include "cubeface.basePath" . -}}
-{{- $origin := include "cubeface.publicOrigin" . -}}
+{{- $fullname := include "medrouter.fullname" . -}}
+{{- $base := include "medrouter.basePath" . -}}
+{{- $origin := include "medrouter.publicOrigin" . -}}
 {{- $mode := toString (default "postgres" .Values.database.mode) -}}
-CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+MedRouter has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
 
 1. Wait for the pod to become ready:
 
@@ -12,15 +12,15 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 
    The managed PostgreSQL cluster takes a little longer to bootstrap:
 
-   kubectl -n {{ .Release.Namespace }} get cluster {{ include "cubeface.postgresClusterName" . }}
-   kubectl -n {{ .Release.Namespace }} get pods -l cnpg.io/cluster={{ include "cubeface.postgresClusterName" . }}
+   kubectl -n {{ .Release.Namespace }} get cluster {{ include "medrouter.postgresClusterName" . }}
+   kubectl -n {{ .Release.Namespace }} get pods -l cnpg.io/cluster={{ include "medrouter.postgresClusterName" . }}
 {{- end }}
 
 {{- if .Values.ingress.enabled }}
 
 2. Open {{ $origin }}{{ $base }}
 
-   The Ingress serves everything under the path prefix {{ include "cubeface.ingressPath" . }}.
+   The Ingress serves everything under the path prefix {{ include "medrouter.ingressPath" . }}.
    Make sure DNS for {{ first .Values.ingress.hosts }} points at your ingress controller.
 {{- else }}
 
@@ -34,16 +34,16 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 3. Configuration notes:
 
 {{- if eq $mode "postgres" }}
-   - Database: CloudNativePG cluster {{ include "cubeface.postgresClusterName" . }}
+   - Database: CloudNativePG cluster {{ include "medrouter.postgresClusterName" . }}
      ({{ .Values.database.postgres.instances }} instance(s), writable service
-     {{ include "cubeface.postgresAddr" . }}).
+     {{ include "medrouter.postgresAddr" . }}).
      {{- if .Values.database.postgres.operator.install }}
      The vendored CloudNativePG operator was installed with this release.
      {{- else }}
      CloudNativePG was assumed to be installed already.
      {{- end }}
-     Connection credentials are in Secret {{ include "cubeface.postgresAppAuthSecretName" . }};
-     the app DSN is in Secret {{ include "cubeface.postgresDSNSecretName" . }}.
+     Connection credentials are in Secret {{ include "medrouter.postgresAppAuthSecretName" . }};
+     the app DSN is in Secret {{ include "medrouter.postgresDSNSecretName" . }}.
      {{- if .Values.database.postgres.retain }}
      The Cluster carries helm.sh/resource-policy: keep: `helm uninstall` leaves
      the database and its PVCs in place. Delete the Cluster manually only when
@@ -52,10 +52,10 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
      The Cluster is deleted together with the release, including all data.
      {{- end }}
 {{- else if eq $mode "external" }}
-   - Database: external PostgreSQL. CubeFace runs AutoMigrate on startup, so the
+   - Database: external PostgreSQL. MedRouter runs AutoMigrate on startup, so the
      DSN user needs CREATE/ALTER privileges on its schema.
 {{- else }}
-   - Database: SQLite at /data/cubeface.db on PVC {{ .Values.persistence.existingClaim | default (include "cubeface.pvcName" .) }}.
+   - Database: SQLite at /data/medrouter.db on PVC {{ .Values.persistence.existingClaim | default (include "medrouter.pvcName" .) }}.
      SQLite is single-writer, so replicaCount must stay at 1.
      {{- if .Values.persistence.retain }}
      The PVC carries helm.sh/resource-policy: keep: `helm uninstall` leaves it
@@ -66,11 +66,11 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 {{- end }}
 {{- if .Values.secret.create }}
    - The chart generated SESSION_SECRET and stored it in Secret
-     {{ include "cubeface.secretName" . }}. Back it up: losing it invalidates
+     {{ include "medrouter.secretName" . }}. Back it up: losing it invalidates
      all existing sessions. Set secrets.SESSION_SECRET to manage it yourself.
 {{- else }}
    - Credentials are read from the pre-existing Secret
-     {{ include "cubeface.secretName" . }}; it must contain SESSION_SECRET{{ if eq $mode "external" }} and SQL_DSN{{ end }}.
+     {{ include "medrouter.secretName" . }}; it must contain SESSION_SECRET{{ if eq $mode "external" }} and SQL_DSN{{ end }}.
 {{- end }}
 {{- if eq (toString .Values.config.EMAIL_VERIFICATION_ENABLED) "false" }}
    - Email verification is DISABLED: the email field is displayed but accounts
@@ -97,9 +97,9 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 {{- if .Values.modelLibrary.enabled }}
    - Model library: the pod reads CubeStack ModelVersion and
      InferenceRuntimeProfile resources with service account
-     {{ include "cubeface.serviceAccountName" . }}.
+     {{ include "medrouter.serviceAccountName" . }}.
      {{- if .Values.modelLibrary.rbac.create }}
-     ClusterRole {{ include "cubeface.modelLibraryRBACName" . }} grants list-only
+     ClusterRole {{ include "medrouter.modelLibraryRBACName" . }} grants list-only
      access; it is cluster-scoped because CubeStack CRDs are cluster-scoped.
      {{- else }}
      modelLibrary.rbac.create=false: grant list access on ai.cubestack.io
@@ -112,9 +112,9 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 {{- end }}
 {{- if .Values.datasetLibrary.enabled }}
    - Dataset library: the pod reads CubeStack Dataset resources with service
-     account {{ include "cubeface.serviceAccountName" . }}.
+     account {{ include "medrouter.serviceAccountName" . }}.
      {{- if .Values.datasetLibrary.rbac.create }}
-     ClusterRole {{ include "cubeface.datasetLibraryRBACName" . }} grants list-only
+     ClusterRole {{ include "medrouter.datasetLibraryRBACName" . }} grants list-only
      access; it is separate from the model library role.
      {{- else }}
      datasetLibrary.rbac.create=false: grant list access on ai.cubestack.io
@@ -128,7 +128,7 @@ CubeFace has been deployed as release {{ .Release.Name }} in namespace {{ .Relea
 
 4. Useful values:
 
-   --set config.BASE_PATH=/cubeface         serve under a path prefix
+   --set config.BASE_PATH=/medrouter         serve under a path prefix
    --set config.PUBLIC_ORIGIN=https://...   override the auto-detected origin
    --set database.mode=sqlite               use a PVC-backed SQLite file instead
    --set database.mode=external \

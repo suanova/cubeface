@@ -1,7 +1,7 @@
 {{- $mode := toString (default "postgres" .Values.database.mode) -}}
 {{- if eq $mode "postgres" -}}
 {{- $pg := .Values.database.postgres -}}
-{{- $cluster := include "cubeface.postgresClusterName" . -}}
+{{- $cluster := include "medrouter.postgresClusterName" . -}}
 {{- $user := toString $pg.auth.username -}}
 {{- $db := toString $pg.auth.database -}}
 {{/*
@@ -13,7 +13,7 @@ CloudNativePG Cluster: HA PostgreSQL managed by the cloudnative-pg operator
   rendered by secret.yaml: the operator applies that password to the app role
   and re-applies it whenever the Secret changes, so the chart password is the
   live database password from first start with no init Job.
-- The writable endpoint is "<cluster>-rw" (see cubeface.postgresAddr).
+- The writable endpoint is "<cluster>-rw" (see medrouter.postgresAddr).
   "<cluster>-ro" / "<cluster>-r" / "<cluster>-any" cover read paths.
 */}}
 apiVersion: postgresql.cnpg.io/v1
@@ -21,7 +21,7 @@ kind: Cluster
 metadata:
   name: {{ $cluster }}
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgres
   {{- if $pg.retain }}
   annotations:
@@ -47,7 +47,7 @@ spec:
       # Credentials for the database owner. The chart renders this Secret, so
       # the operator never generates a random app password.
       secret:
-        name: {{ include "cubeface.postgresAppAuthSecretName" . }}
+        name: {{ include "medrouter.postgresAppAuthSecretName" . }}
   # The superuser has no password and is not reachable over TCP.
   enableSuperuserAccess: false
   {{- if $pg.backups.enabled }}
@@ -64,7 +64,7 @@ spec:
 ---
 {{/*
 Optional operator-managed PgBouncer pooler in front of the primary.
-CubeFace keeps connecting to the -rw service; the pooler service is
+MedRouter keeps connecting to the -rw service; the pooler service is
 "<cluster>-pgbouncer:5432" for other clients.
 */}}
 apiVersion: postgresql.cnpg.io/v1
@@ -72,7 +72,7 @@ kind: Pooler
 metadata:
   name: {{ $cluster }}-pgbouncer
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgres-pooler
 spec:
   cluster:
@@ -89,7 +89,7 @@ kind: ScheduledBackup
 metadata:
   name: {{ $cluster }}-backup
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgres-backup
 spec:
   cluster:

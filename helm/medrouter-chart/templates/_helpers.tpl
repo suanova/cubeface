@@ -2,14 +2,14 @@
 Chart name. Kept independent of .Chart.Name because it is used in immutable
 Deployment selectors.
 */}}
-{{- define "cubeface.name" -}}
-{{- default "cubeface" .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- define "medrouter.name" -}}
+{{- default "medrouter" .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Fully qualified app name, used as the base for every resource name.
 */}}
-{{- define "cubeface.fullname" -}}
+{{- define "medrouter.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else if .Values.nameOverride -}}
@@ -22,8 +22,8 @@ Fully qualified app name, used as the base for every resource name.
 {{/*
 Common labels.
 */}}
-{{- define "cubeface.labels" -}}
-app.kubernetes.io/name: {{ include "cubeface.name" . }}
+{{- define "medrouter.labels" -}}
+app.kubernetes.io/name: {{ include "medrouter.name" . }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
@@ -34,10 +34,10 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 
 {{/*
 Selector labels for a component.
-Usage: {{ include "cubeface.selectorLabels" (dict "root" . "component" "app") }}
+Usage: {{ include "medrouter.selectorLabels" (dict "root" . "component" "app") }}
 */}}
-{{- define "cubeface.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "cubeface.name" .root }}
+{{- define "medrouter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "medrouter.name" .root }}
 app.kubernetes.io/instance: {{ .root.Release.Name }}
 app.kubernetes.io/component: {{ .component }}
 {{- end -}}
@@ -45,12 +45,12 @@ app.kubernetes.io/component: {{ .component }}
 {{/*
 Normalized BASE_PATH: "", or "/foo" without a trailing slash.
 */}}
-{{- define "cubeface.basePath" -}}
+{{- define "medrouter.basePath" -}}
 {{- $raw := trim (toString .Values.config.BASE_PATH) -}}
 {{- $clean := trimAll "/" $raw -}}
 {{- if $clean -}}
 {{- if not (regexMatch "^[A-Za-z0-9._~-]+(/[A-Za-z0-9._~-]+)*$" $clean) -}}
-{{- fail (printf "config.BASE_PATH must be a path prefix such as /cubeface, got %q" $raw) -}}
+{{- fail (printf "config.BASE_PATH must be a path prefix such as /medrouter, got %q" $raw) -}}
 {{- end -}}
 {{- range $segment := splitList "/" $clean -}}
 {{- if or (eq $segment ".") (eq $segment "..") -}}
@@ -66,7 +66,7 @@ Browser-visible origin. Configured value wins; otherwise derive it from the
 first Ingress host (https when TLS is enabled), falling back to the port-forward
 address. Login POSTs are origin-checked, so this must match the browser URL.
 */}}
-{{- define "cubeface.publicOrigin" -}}
+{{- define "medrouter.publicOrigin" -}}
 {{- $configured := trim (toString .Values.config.PUBLIC_ORIGIN) -}}
 {{- if $configured -}}
 {{- trimSuffix "/" $configured -}}
@@ -82,7 +82,7 @@ address. Login POSTs are origin-checked, so this must match the browser URL.
 Session cookie Secure flag: explicit value wins, otherwise https origins get
 Secure cookies and plain-http local port-forwards remain usable.
 */}}
-{{- define "cubeface.sessionCookieSecure" -}}
+{{- define "medrouter.sessionCookieSecure" -}}
 {{- $secure := "" -}}
 {{- if hasKey .Values.config "SESSION_COOKIE_SECURE" -}}
 {{- $secure = toString .Values.config.SESSION_COOKIE_SECURE -}}
@@ -93,44 +93,44 @@ Secure cookies and plain-http local port-forwards remain usable.
 {{- end -}}
 {{- $secure -}}
 {{- else -}}
-{{- if hasPrefix "https://" (include "cubeface.publicOrigin" .) -}}true{{- else -}}false{{- end -}}
+{{- if hasPrefix "https://" (include "medrouter.publicOrigin" .) -}}true{{- else -}}false{{- end -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Ingress path and probe path (the Go app serves /healthz under BASE_PATH).
 */}}
-{{- define "cubeface.ingressPath" -}}
-{{- $base := include "cubeface.basePath" . -}}
+{{- define "medrouter.ingressPath" -}}
+{{- $base := include "medrouter.basePath" . -}}
 {{- if $base -}}{{ $base }}{{- else -}}/{{- end -}}
 {{- end -}}
 
-{{- define "cubeface.probePath" -}}
-{{- printf "%s/healthz" (include "cubeface.basePath" .) -}}
+{{- define "medrouter.probePath" -}}
+{{- printf "%s/healthz" (include "medrouter.basePath" .) -}}
 {{- end -}}
 
 {{/*
 Created or pre-existing Secret name.
 */}}
-{{- define "cubeface.secretName" -}}
+{{- define "medrouter.secretName" -}}
 {{- if .Values.secret.create -}}
-{{- printf "%s-secret" (include "cubeface.fullname" .) -}}
+{{- printf "%s-secret" (include "medrouter.fullname" .) -}}
 {{- else -}}
 {{- required "secret.existingSecret is required when secret.create=false" .Values.secret.existingSecret -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "cubeface.pvcName" -}}
-{{- printf "%s-data" (include "cubeface.fullname" .) -}}
+{{- define "medrouter.pvcName" -}}
+{{- printf "%s-data" (include "medrouter.fullname" .) -}}
 {{- end -}}
 
 {{/*
-Service account used by the CubeFace pod. Empty when the chart should fall back
+Service account used by the MedRouter pod. Empty when the chart should fall back
 to the namespace default account.
 */}}
-{{- define "cubeface.serviceAccountName" -}}
+{{- define "medrouter.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-{{- default (include "cubeface.fullname" .) .Values.serviceAccount.name -}}
+{{- default (include "medrouter.fullname" .) .Values.serviceAccount.name -}}
 {{- else -}}
 {{- .Values.serviceAccount.name -}}
 {{- end -}}
@@ -140,43 +140,43 @@ to the namespace default account.
 Cluster-scoped RBAC name. Namespace is included so two releases with the same
 name in different namespaces do not fight over the same ClusterRole.
 */}}
-{{- define "cubeface.modelLibraryRBACName" -}}
-{{- printf "%s-%s-model-library" (include "cubeface.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
+{{- define "medrouter.modelLibraryRBACName" -}}
+{{- printf "%s-%s-model-library" (include "medrouter.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "cubeface.datasetLibraryRBACName" -}}
-{{- printf "%s-%s-dataset-library" (include "cubeface.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
+{{- define "medrouter.datasetLibraryRBACName" -}}
+{{- printf "%s-%s-dataset-library" (include "medrouter.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 CloudNativePG Cluster CR name. Truncated so the operator-derived service names
 (<name>-rw, <name>-ro, <name>-pgbouncer) stay within 63 characters.
 */}}
-{{- define "cubeface.postgresClusterName" -}}
-{{- printf "%s-postgres" (include "cubeface.fullname" .) | trunc 50 | trimSuffix "-" -}}
+{{- define "medrouter.postgresClusterName" -}}
+{{- printf "%s-postgres" (include "medrouter.fullname" .) | trunc 50 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Writable PostgreSQL endpoint: the CloudNativePG read-write service follows the
 current primary across failovers.
 */}}
-{{- define "cubeface.postgresAddr" -}}
-{{- printf "%s-rw:5432" (include "cubeface.postgresClusterName" .) -}}
+{{- define "medrouter.postgresAddr" -}}
+{{- printf "%s-rw:5432" (include "medrouter.postgresClusterName" .) -}}
 {{- end -}}
 
 {{/*
 basic-auth Secret passed to spec.bootstrap.initdb.secret. The operator applies
 its password to the database owner role and re-applies it on change.
 */}}
-{{- define "cubeface.postgresAppAuthSecretName" -}}
-{{- printf "%s-app-auth" (include "cubeface.postgresClusterName" .) -}}
+{{- define "medrouter.postgresAppAuthSecretName" -}}
+{{- printf "%s-app-auth" (include "medrouter.postgresClusterName" .) -}}
 {{- end -}}
 
 {{/*
 Chart-managed Secret holding SQL_DSN for the managed cluster.
 */}}
-{{- define "cubeface.postgresDSNSecretName" -}}
-{{- printf "%s-postgres-dsn" (include "cubeface.fullname" .) -}}
+{{- define "medrouter.postgresDSNSecretName" -}}
+{{- printf "%s-postgres-dsn" (include "medrouter.fullname" .) -}}
 {{- end -}}
 
 {{/*
@@ -185,9 +185,9 @@ would break the userinfo segment. Generated passwords are alphanumeric and
 always pass; explicit values with URI special characters are rejected instead
 of being percent-encoded so the rendered DSN stays predictable for psql and
 pgx alike.
-Usage: {{ include "cubeface.assertDSNSafe" (dict "value" $pw "label" "secrets.POSTGRES_PASSWORD") }}
+Usage: {{ include "medrouter.assertDSNSafe" (dict "value" $pw "label" "secrets.POSTGRES_PASSWORD") }}
 */}}
-{{- define "cubeface.assertDSNSafe" -}}
+{{- define "medrouter.assertDSNSafe" -}}
 {{- $v := toString .value -}}
 {{- if or (contains "'" $v) (contains " " $v) (contains "@" $v) (contains ":" $v) (contains "/" $v) (contains "?" $v) (contains "#" $v) (contains "[" $v) (contains "]" $v) (contains "%" $v) -}}
 {{- fail (printf "%s must not contain single quotes, spaces or URI special characters (@ : / ? # [ ] %%)" .label) -}}
@@ -198,7 +198,7 @@ Usage: {{ include "cubeface.assertDSNSafe" (dict "value" $pw "label" "secrets.PO
 Render-time validation shared by the chart templates. Called from the
 ConfigMap, which is always rendered.
 */}}
-{{- define "cubeface.validate" -}}
+{{- define "medrouter.validate" -}}
 {{- $mode := toString (default "postgres" .Values.database.mode) -}}
 {{- if not (has $mode (list "postgres" "external" "sqlite")) -}}
 {{- fail (printf "database.mode must be 'postgres', 'external' or 'sqlite', got %q" $mode) -}}
@@ -239,7 +239,7 @@ ConfigMap, which is always rendered.
 {{- end -}}
 {{- $pgPassword := toString (default "" .Values.secrets.POSTGRES_PASSWORD) -}}
 {{- if $pgPassword -}}
-{{- include "cubeface.assertDSNSafe" (dict "value" $pgPassword "label" "secrets.POSTGRES_PASSWORD") -}}
+{{- include "medrouter.assertDSNSafe" (dict "value" $pgPassword "label" "secrets.POSTGRES_PASSWORD") -}}
 {{- end -}}
 {{- if and $pg.pgBouncer.enabled (lt (int (default 0 $pg.pgBouncer.replicas)) 1) -}}
 {{- fail "database.postgres.pgBouncer.replicas must be at least 1 when the pooler is enabled" -}}
@@ -255,11 +255,11 @@ ConfigMap, which is always rendered.
 {{- end -}}
 {{- end -}}
 
-{{- $_ := include "cubeface.secretName" . -}}
-{{- $_ := include "cubeface.basePath" . -}}
+{{- $_ := include "medrouter.secretName" . -}}
+{{- $_ := include "medrouter.basePath" . -}}
 
 {{- if and .Values.modelLibrary.enabled .Values.modelLibrary.rbac.create -}}
-{{- if not (trim (toString (include "cubeface.serviceAccountName" .))) -}}
+{{- if not (trim (toString (include "medrouter.serviceAccountName" .))) -}}
 {{- fail "modelLibrary.rbac.create=true requires a service account; set serviceAccount.create=true or serviceAccount.name" -}}
 {{- end -}}
 {{- end -}}
@@ -270,7 +270,7 @@ ConfigMap, which is always rendered.
 {{- fail "modelLibrary.requestTimeoutSeconds must be at least 1" -}}
 {{- end -}}
 {{- if and .Values.datasetLibrary.enabled .Values.datasetLibrary.rbac.create -}}
-{{- if not (trim (toString (include "cubeface.serviceAccountName" .))) -}}
+{{- if not (trim (toString (include "medrouter.serviceAccountName" .))) -}}
 {{- fail "datasetLibrary.rbac.create=true requires a service account; set serviceAccount.create=true or serviceAccount.name" -}}
 {{- end -}}
 {{- end -}}
@@ -281,10 +281,10 @@ ConfigMap, which is always rendered.
 {{- fail "datasetLibrary.requestTimeoutSeconds must be at least 1" -}}
 {{- end -}}
 {{- if eq $mode "postgres" -}}
-{{- $_ := include "cubeface.postgresClusterName" . -}}
+{{- $_ := include "medrouter.postgresClusterName" . -}}
 {{- end -}}
 
-{{- $origin := include "cubeface.publicOrigin" . -}}
+{{- $origin := include "medrouter.publicOrigin" . -}}
 {{- if not (regexMatch "^https?://[^/]+$" $origin) -}}
 {{- fail (printf "config.PUBLIC_ORIGIN must be an http(s) origin without a path, got %q" $origin) -}}
 {{- end -}}

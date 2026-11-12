@@ -14,7 +14,7 @@ kind: ModelVersion
 metadata:
   name: demo-model-v1-1-0
   annotations:
-    cubeface.io/display-name: Stale Display Name
+    medrouter.io/display-name: Stale Display Name
 spec:
   model: demo-model
   version: v1.1.0
@@ -39,13 +39,13 @@ kind: ModelVersion
 metadata:
   name: demo-model-v1-2-0
   annotations:
-    cubeface.io/display-name: Demo Model
-    cubeface.io/publisher: CubeFace CI
-    cubeface.io/task: chat
-    cubeface.io/license: Apache-2.0
-    cubeface.io/tags: demo, qwen2
-    cubeface.io/usage-boundary: CI fixture only
-    cubeface.io/featured: "true"
+    medrouter.io/display-name: Demo Model
+    medrouter.io/publisher: MedRouter CI
+    medrouter.io/task: chat
+    medrouter.io/license: Apache-2.0
+    medrouter.io/tags: demo, qwen2
+    medrouter.io/usage-boundary: CI fixture only
+    medrouter.io/featured: "true"
     ai.cubestack.io/description: Fixture model backed by two ModelVersions.
 spec:
   model: demo-model
@@ -129,17 +129,17 @@ kind: Dataset
 metadata:
   name: demo-dataset-v1-1-0
   annotations:
-    cubeface.io/display-name: Demo Dataset
-    cubeface.io/publisher: CubeFace CI
-    cubeface.io/task: sft
-    cubeface.io/license: CC-BY-4.0
-    cubeface.io/tags: demo, parquet
-    cubeface.io/access: public
-    cubeface.io/deidentification: PII removed
-    cubeface.io/ethics: Internal review
-    cubeface.io/source-repo: https://example.com/demo-dataset
-    cubeface.io/usage-boundary: CI fixture only
-    cubeface.io/featured: "true"
+    medrouter.io/display-name: Demo Dataset
+    medrouter.io/publisher: MedRouter CI
+    medrouter.io/task: sft
+    medrouter.io/license: CC-BY-4.0
+    medrouter.io/tags: demo, parquet
+    medrouter.io/access: public
+    medrouter.io/deidentification: PII removed
+    medrouter.io/ethics: Internal review
+    medrouter.io/source-repo: https://example.com/demo-dataset
+    medrouter.io/usage-boundary: CI fixture only
+    medrouter.io/featured: "true"
     ai.cubestack.io/description: Fixture dataset backed by two Dataset versions.
 spec:
   dataset: demo-dataset

@@ -197,7 +197,7 @@ export function ModelDetailPage() {
 
       <footer className='ml-foot'>
         <div className='ml-container ml-foot-inner'>
-          <span>© 2026 CubeFace</span>
+          <span>© 2026 MedRouter</span>
           <span className='ml-mono'>{t('models.footer.source')}</span>
         </div>
       </footer>

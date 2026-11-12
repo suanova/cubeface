@@ -8,7 +8,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
-const STORAGE_KEY = 'cubeface-theme'
+const STORAGE_KEY = 'medrouter-theme'
 
 function readStoredTheme(): Theme {
   if (typeof window === 'undefined') return 'light'

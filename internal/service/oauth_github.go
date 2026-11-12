@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/cubeface/cubeface/internal/config"
+	"github.com/suanova/medrouter/internal/config"
 )
 
 const (
@@ -120,7 +120,7 @@ func getJSON(ctx context.Context, client *http.Client, url string, out any) erro
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "CubeFace")
+	req.Header.Set("User-Agent", "MedRouter")
 
 	resp, err := client.Do(req)
 	if err != nil {

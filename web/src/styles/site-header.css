@@ -1,10 +1,10 @@
 /*
  * Site top bar.
  *
- * Ported from the StarStack model-hub mockup so every CubeFace page shares the
+ * Ported from the StarStack model-hub mockup so every MedRouter page shares the
  * same branding: a full-width sticky bar with a boxed logo mark, a mono
  * subtitle, an underlined active nav item and a square account chip.
- * Tokens map onto the CubeFace theme, so light/dark both work.
+ * Tokens map onto the MedRouter theme, so light/dark both work.
  */
 
 .site-topbar {

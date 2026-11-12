@@ -178,7 +178,7 @@ export function DatasetDetailPage() {
 
       <footer className='ml-foot'>
         <div className='ml-container ml-foot-inner'>
-          <span>© 2026 CubeFace</span>
+          <span>© 2026 MedRouter</span>
           <span className='ml-mono'>{t('datasets.footer.source')}</span>
         </div>
       </footer>

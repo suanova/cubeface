@@ -5,7 +5,7 @@
 
 # Build output
 /bin/
-/cubeface
+/medrouter
 /web/dist/
 /web/node_modules/
 /web/.tanstack/

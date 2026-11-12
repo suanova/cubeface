@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 const (
@@ -29,7 +29,7 @@ type catalogSnapshot struct {
 }
 
 // ModelCatalog caches raw CubeStack resources and projects them per request.
-// The cache is process-local: several CubeFace replicas each read the API
+// The cache is process-local: several MedRouter replicas each read the API
 // independently, which is cheap because the CRDs are small.
 type ModelCatalog struct {
 	source  kube.Source

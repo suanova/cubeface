@@ -1,13 +1,13 @@
 GO ?= go
 BUN ?= bun
-BIN ?= bin/cubeface
+BIN ?= bin/medrouter
 
 .PHONY: help run build build-web dev-web test test-go test-web check vet typecheck fmt clean
 
 help:
-	@echo "CubeFace"
+	@echo "MedRouter"
 	@echo ""
-	@echo "  make build       Build the frontend, then the Go binary (bin/cubeface)"
+	@echo "  make build       Build the frontend, then the Go binary (bin/medrouter)"
 	@echo "  make run         Run the Go server (requires web/dist or make build-web)"
 	@echo "  make dev-web     Start the Rsbuild dev server on :5173"
 	@echo "  make test        Run Go and frontend tests"

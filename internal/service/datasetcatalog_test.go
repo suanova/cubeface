@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 func mustJSON(t *testing.T, v any) []byte {

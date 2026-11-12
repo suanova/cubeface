@@ -1,49 +1,49 @@
-# CubeFace Helm Chart
+# MedRouter Helm Chart
 
-把 CubeFace 部署到 Kubernetes。CubeFace 是单个 Go 二进制（前端已内嵌），因此本 Chart 只有一个无状态 Deployment 和 Service，不需要 Redis。
+把 MedRouter 部署到 Kubernetes。MedRouter 是单个 Go 二进制（前端已内嵌），因此本 Chart 只有一个无状态 Deployment 和 Service，不需要 Redis。
 
 数据库有三种模式：
 
-- **`postgres`（默认）**：Chart 内嵌 [CloudNativePG](https://cloudnative-pg.io/) operator 子 Chart，并创建 `Cluster` CR。默认 3 个 PostgreSQL 实例，流复制、自动故障切换、自签名 TLS，可水平扩容 CubeFace。
+- **`postgres`（默认）**：Chart 内嵌 [CloudNativePG](https://cloudnative-pg.io/) operator 子 Chart，并创建 `Cluster` CR。默认 3 个 PostgreSQL 实例，流复制、自动故障切换、自签名 TLS，可水平扩容 MedRouter。
 - **`external`**：连接已有的 PostgreSQL，DSN 由使用者提供。
-- **`sqlite`**：数据库文件放在 PVC 的 `/data/cubeface.db`，只能单副本运行，适合开发或小规模部署。
+- **`sqlite`**：数据库文件放在 PVC 的 `/data/medrouter.db`，只能单副本运行，适合开发或小规模部署。
 
 ## 前置条件
 
 - Kubernetes 1.29+（CloudNativePG 1.30 子 Chart 的要求）
 - Helm 3.8+
-- 可用的 CubeFace 镜像。默认 `harbor.isuanova.com/suanova/cubeface:<appVersion>`，由 `.github/workflows/build-image-push.yaml` 构建推送；也可以自行构建并推送到私有仓库后覆盖 `image.repository` / `image.tag`。若 Harbor 项目不公开，需要配置 `imagePullSecrets`。
+- 可用的 MedRouter 镜像。默认 `harbor.isuanova.com/suanova/medrouter:<appVersion>`，由 `.github/workflows/build-image-push.yaml` 构建推送；也可以自行构建并推送到私有仓库后覆盖 `image.repository` / `image.tag`。若 Harbor 项目不公开，需要配置 `imagePullSecrets`。
 - `postgres` / `sqlite` 模式需要一个默认 StorageClass，或在安装时显式指定。
 - 安装 CloudNativePG operator 需要 cluster 级权限（CRD、ClusterRole、Webhook）。若集群已安装 operator，设置 `database.postgres.operator.install=false`。
 
 ## 快速安装（托管 PostgreSQL，默认）
 
 ```bash
-helm install cubeface ./helm/cubeface-chart \
-  --namespace cubeface --create-namespace
+helm install medrouter ./helm/medrouter-chart \
+  --namespace medrouter --create-namespace
 ```
 
 这会安装：
 
 - CloudNativePG operator（`charts/cloudnative-pg`，operator 1.30.0）；
 - 名为 `<release>-postgres` 的 3 实例 PostgreSQL 集群；
-- CubeFace Deployment，通过 `<release>-postgres-rw:5432` 连接主库（故障切换后 Service 自动跟随新主库）。
+- MedRouter Deployment，通过 `<release>-postgres-rw:5432` 连接主库（故障切换后 Service 自动跟随新主库）。
 
 默认没有 Ingress，使用端口转发访问。本地端口要与 `config.PORT` 一致，否则浏览器 Origin 和 `PUBLIC_ORIGIN` 不匹配：
 
 ```bash
-kubectl -n cubeface port-forward svc/cubeface 3000:80
+kubectl -n medrouter port-forward svc/medrouter 3000:80
 # 打开 http://localhost:3000
 ```
 
 查看数据库状态：
 
 ```bash
-kubectl -n cubeface get cluster cubeface-postgres
-kubectl -n cubeface get pods -l cnpg.io/cluster=cubeface-postgres
+kubectl -n medrouter get cluster medrouter-postgres
+kubectl -n medrouter get pods -l cnpg.io/cluster=medrouter-postgres
 ```
 
-首次安装会生成 `SESSION_SECRET` 并写入 `cubeface-secret`，生成 PostgreSQL 应用密码并写入 `cubeface-postgres-app-auth` 与 `cubeface-postgres-dsn`。请备份它们。
+首次安装会生成 `SESSION_SECRET` 并写入 `medrouter-secret`，生成 PostgreSQL 应用密码并写入 `medrouter-postgres-app-auth` 与 `medrouter-postgres-dsn`。请备份它们。
 
 ## PostgreSQL 高可用
 
@@ -60,13 +60,13 @@ database:
       requests: {cpu: 500m, memory: 1Gi}
       limits: {cpu: "2", memory: 4Gi}
     auth:
-      database: cubeface
-      username: cubeface  # 只能是 [a-z_][a-z0-9_]*
+      database: medrouter
+      username: medrouter  # 只能是 [a-z_][a-z0-9_]*
 ```
 
 `instances=1` 可以运行，但没有故障切换能力。生产环境建议 3 个实例并配合 `database.postgres.storageClassName` 选择支持跨节点访问的存储（`ReadWriteOnce` 即可，CNPG 每个实例使用独立 PVC）。
 
-CubeFace 的 `replicaCount` 与 PostgreSQL 实例数相互独立。多个应用副本会共享同一个 `-rw` 主库 Service；应用启动时执行 `AutoMigrate`，多副本同时启动通常安全，但大版本升级时建议先把 `replicaCount` 缩到 1。
+MedRouter 的 `replicaCount` 与 PostgreSQL 实例数相互独立。多个应用副本会共享同一个 `-rw` 主库 Service；应用启动时执行 `AutoMigrate`，多副本同时启动通常安全，但大版本升级时建议先把 `replicaCount` 缩到 1。
 
 ### 自动故障切换
 
@@ -96,7 +96,7 @@ database:
       replicas: 2
 ```
 
-会额外创建 `Pooler`（`<cluster>-pgbouncer:5432`）。CubeFace 自身仍直连 `-rw`；该池化服务供其它客户端使用。
+会额外创建 `Pooler`（`<cluster>-pgbouncer:5432`）。MedRouter 自身仍直连 `-rw`；该池化服务供其它客户端使用。
 
 ### 复用已有 CloudNativePG operator
 
@@ -113,13 +113,13 @@ CloudNativePG 的 CRD 位于子 Chart 的 `crds/` 目录。Helm 只在首次安�
 ## 使用 SQLite（开发/小规模）
 
 ```bash
-helm install cubeface ./helm/cubeface-chart \
-  --namespace cubeface --create-namespace \
+helm install medrouter ./helm/medrouter-chart \
+  --namespace medrouter --create-namespace \
   --set database.mode=sqlite \
   --set database.postgres.operator.install=false
 ```
 
-- 数据库文件在 PVC 的 `/data/cubeface.db`；`persistence.retain=true`（默认）会加 `helm.sh/resource-policy: keep`，卸载后保留数据。
+- 数据库文件在 PVC 的 `/data/medrouter.db`；`persistence.retain=true`（默认）会加 `helm.sh/resource-policy: keep`，卸载后保留数据。
 - SQLite 是单写者，`replicaCount` 必须为 1；Chart 会拒绝多副本。
 - 使用 `Recreate` 更新策略，升级期间会短暂中断。
 - 即使使用 SQLite，默认的 `database.postgres.operator.install=true` 仍会安装 CloudNativePG operator；用不到时请显式设为 `false`（如上）。
@@ -127,11 +127,11 @@ helm install cubeface ./helm/cubeface-chart \
 ## 使用外部 PostgreSQL
 
 ```bash
-helm upgrade --install cubeface ./helm/cubeface-chart \
-  --namespace cubeface \
+helm upgrade --install medrouter ./helm/medrouter-chart \
+  --namespace medrouter \
   --set database.mode=external \
   --set database.postgres.operator.install=false \
-  --set 'database.external.dsn=postgres://cubeface:password@db.example.com:5432/cubeface?sslmode=require' \
+  --set 'database.external.dsn=postgres://medrouter:password@db.example.com:5432/medrouter?sslmode=require' \
   --set replicaCount=2
 ```
 
@@ -144,8 +144,8 @@ helm upgrade --install cubeface ./helm/cubeface-chart \
 ## 使用 Ingress
 
 ```bash
-helm upgrade --install cubeface ./helm/cubeface-chart \
-  --namespace cubeface \
+helm upgrade --install medrouter ./helm/medrouter-chart \
+  --namespace medrouter \
   --set ingress.enabled=true \
   --set ingress.className=nginx \
   --set 'ingress.hosts[0]=models.example.com' \
@@ -158,16 +158,16 @@ helm upgrade --install cubeface ./helm/cubeface-chart \
 ### 子路径部署
 
 ```bash
-helm upgrade --install cubeface ./helm/cubeface-chart \
-  --namespace cubeface \
-  --set config.BASE_PATH=/cubeface \
+helm upgrade --install medrouter ./helm/medrouter-chart \
+  --namespace medrouter \
+  --set config.BASE_PATH=/medrouter \
   --set ingress.enabled=true \
   --set 'ingress.hosts[0]=example.com' \
   --set ingress.tls.enabled=true \
   --set ingress.tls.secretName=example-tls
 ```
 
-此时站点地址是 `https://example.com/cubeface`。Ingress 只发布 `/cubeface` 前缀；API、Cookie Path、OAuth 回调和健康检查都会自动带前缀。
+此时站点地址是 `https://example.com/medrouter`。Ingress 只发布 `/medrouter` 前缀；API、Cookie Path、OAuth 回调和健康检查都会自动带前缀。
 
 > 如果 TLS 在 Ingress 之外终止（例如在负载均衡器或 cert-manager 的 ssl-redirect 上），自动推导出的 `PUBLIC_ORIGIN` 可能是 `http://`。此时必须显式设置 `config.PUBLIC_ORIGIN=https://...`，否则登录会被同源校验拒绝（403 `CROSS_ORIGIN_REQUEST`）。
 
@@ -223,7 +223,7 @@ PostgreSQL owner 密码来自 `secrets.POSTGRES_PASSWORD`；为空时生成 24 �
 ```yaml
 secret:
   create: false
-  existingSecret: cubeface-credentials
+  existingSecret: medrouter-credentials
 ```
 
 该 Secret 至少需要：
@@ -247,29 +247,29 @@ secret:
 - 为数据集库创建独立的只读 ClusterRole / ClusterRoleBinding，仅允许 `list` `datasets`；
 - 通过 ConfigMap 注入 `MODEL_LIBRARY_*` 与 `DATASET_LIBRARY_*`（`ENABLED`、`CACHE_TTL_SECONDS`、`REQUEST_TIMEOUT_SECONDS`）。
 
-两个库的开关与 RBAC 相互独立：关闭数据集库不会影响 `/api/models`，反之亦然。两个 ClusterRoleBinding 都带 `cubeface.io/catalog: models|datasets` 标签，便于按目录分别审计或删除。
+两个库的开关与 RBAC 相互独立：关闭数据集库不会影响 `/api/models`，反之亦然。两个 ClusterRoleBinding 都带 `medrouter.io/catalog: models|datasets` 标签，便于按目录分别审计或删除。
 
 ```bash
 # 默认：创建 SA + 两套 RBAC
-helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace
+helm install medrouter ./helm/medrouter-chart -n medrouter --create-namespace
 
 # 已有 CubeStack 只读 Role，自己绑定：关闭 Chart 的 RBAC
-helm install cubeface ./helm/cubeface-chart -n cubeface \
+helm install medrouter ./helm/medrouter-chart -n medrouter \
   --set modelLibrary.rbac.create=false \
   --set datasetLibrary.rbac.create=false
 
 # 不使用数据集库：不渲染 Dataset ClusterRole，页面显示 DISABLED
-helm install cubeface ./helm/cubeface-chart -n cubeface \
+helm install medrouter ./helm/medrouter-chart -n medrouter \
   --set datasetLibrary.enabled=false
 ```
 
-没有安装 CubeStack CRD 或缺少 RBAC 时，CubeFace 仍能正常启动，`/api/models` / `/api/datasets` 返回 HTTP 200 且 `available:false`，页面按原因显示 `CRD_MISSING` / `FORBIDDEN` 等不可用状态。
+没有安装 CubeStack CRD 或缺少 RBAC 时，MedRouter 仍能正常启动，`/api/models` / `/api/datasets` 返回 HTTP 200 且 `available:false`，页面按原因显示 `CRD_MISSING` / `FORBIDDEN` 等不可用状态。
 
 ## 常用配置
 
 | 值 | 默认 | 说明 |
 |---|---|---|
-| `image.repository` / `image.tag` | `harbor.isuanova.com/suanova/cubeface` / Chart appVersion | 镜像地址 |
+| `image.repository` / `image.tag` | `harbor.isuanova.com/suanova/medrouter` / Chart appVersion | 镜像地址 |
 | `replicaCount` | `1` | SQLite 模式必须为 1 |
 | `serviceAccount.create` | `true` | 为模型库/数据集库创建 ServiceAccount |
 | `serviceAccount.name` | 空（使用 fullname） | 指定已有 ServiceAccount |
@@ -301,7 +301,7 @@ helm install cubeface ./helm/cubeface-chart -n cubeface \
 | `ingress.enabled` | `false` | 是否创建 Ingress |
 | `service.port` | `80` | Service 端口 |
 | `pdb.enabled` / `minAvailable` | `true` / `1` | 仅在应用副本数 > 1 时渲染 |
-| `resources` | 100m/128Mi → 1/512Mi | CubeFace 容器资源 |
+| `resources` | 100m/128Mi → 1/512Mi | MedRouter 容器资源 |
 | `cloudnative-pg.image.tag` | `1.30.0` | 内嵌 operator 镜像版本 |
 | `envVars` | `[]` | 追加环境变量，例如 `[{name: DB_MAX_OPEN_CONNS, value: "20"}]` |
 | `extraVolumes` / `extraVolumeMounts` | `[]` | 追加卷和挂载 |
@@ -336,8 +336,8 @@ Chart 在渲染阶段会拒绝以下配置：
 ## 升级与卸载
 
 ```bash
-helm upgrade cubeface ./helm/cubeface-chart -n cubeface
-helm uninstall cubeface -n cubeface
+helm upgrade medrouter ./helm/medrouter-chart -n medrouter
+helm uninstall medrouter -n medrouter
 ```
 
 - SQLite 模式使用 `Recreate` 更新策略，旧 Pod 释放 RWO 卷后新 Pod 才启动，升级期间会短暂中断。
@@ -345,13 +345,13 @@ helm uninstall cubeface -n cubeface
 - `database.postgres.retain=true` 时 `helm uninstall` 不会删除 CloudNativePG `Cluster` 及其 PVC。重新安装前如果需要彻底清理：
 
   ```bash
-  kubectl -n cubeface delete cluster cubeface-postgres
+  kubectl -n medrouter delete cluster medrouter-postgres
   ```
 
 - `persistence.retain=true` 时 SQLite PVC 同样会保留；需要清理时手动删除：
 
   ```bash
-  kubectl -n cubeface delete pvc cubeface-data
+  kubectl -n medrouter delete pvc medrouter-data
   ```
 
 - 自动生成的 `SESSION_SECRET` 在卸载后随 Secret 一起删除；如果数据库保留下来而 Secret 丢失，可以启动，但旧会话全部失效。
@@ -365,9 +365,9 @@ helm uninstall cubeface -n cubeface
 - 以默认的 `database.mode=postgres` 安装 Chart，由 Chart 自带的 CloudNativePG operator 创建 3 实例 PostgreSQL 集群；
 - 通过端口转发访问 `/healthz`、`/api/status`，完成注册 → 登录 → 当前用户流程；
 - 直接查询 PostgreSQL 主库的 `users` / `user_sessions` 表，确认数据写入的是 CNPG 集群而不是 SQLite；
-- 删除主库 Pod 触发自动故障切换，验证新主库产生、集群恢复到 3 个 ready 实例且 CubeFace 继续服务。
+- 删除主库 Pod 触发自动故障切换，验证新主库产生、集群恢复到 3 个 ready 实例且 MedRouter 继续服务。
 
-镜像发布由另外两个工作流负责，均推送到 `harbor.isuanova.com/suanova/cubeface`：
+镜像发布由另外两个工作流负责，均推送到 `harbor.isuanova.com/suanova/medrouter`：
 
 - [`build-image-pr.yaml`](../../.github/workflows/build-image-pr.yaml)：PR 构建并推送 `pr-<number>` / `sha-<short>`；
 - [`build-image-push.yaml`](../../.github/workflows/build-image-push.yaml)：`main`/`master` 与 `v*` 标签构建多架构镜像，推送分支名、`sha-<short>`、语义化版本，默认分支另有 `latest`。

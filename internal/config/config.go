@@ -13,7 +13,7 @@ import (
 const (
 	// DefaultDevSessionSecret is only used when APP_ENV is not production.
 	// It keeps sessions valid across restarts during development.
-	DefaultDevSessionSecret = "cubeface-dev-only-session-secret-change-me"
+	DefaultDevSessionSecret = "medrouter-dev-only-session-secret-change-me"
 	Version                 = "0.1.0"
 )
 
@@ -97,12 +97,12 @@ func Load() (*Config, error) {
 		Port:           getenv("PORT", "3000"),
 		BasePath:       normalizeBasePath(os.Getenv("BASE_PATH")),
 		PublicOrigin:   strings.TrimRight(getenv("PUBLIC_ORIGIN", "http://localhost:5173"), "/"),
-		SystemName:     getenv("SYSTEM_NAME", "CubeFace"),
+		SystemName:     getenv("SYSTEM_NAME", "MedRouter"),
 		Version:        Version,
 		TrustedProxies: splitCSV(os.Getenv("TRUSTED_PROXIES")),
 
 		SessionSecret:        os.Getenv("SESSION_SECRET"),
-		SessionCookieName:    getenv("SESSION_COOKIE_NAME", "cubeface_session"),
+		SessionCookieName:    getenv("SESSION_COOKIE_NAME", "medrouter_session"),
 		SessionCookieSecure:  boolEnv("SESSION_COOKIE_SECURE", appEnv == "production"),
 		SessionTTL:           daysEnv("SESSION_TTL_DAYS", 30),
 		SessionTouchInterval: secondsEnv("SESSION_TOUCH_INTERVAL_SECONDS", 3600),
@@ -113,7 +113,7 @@ func Load() (*Config, error) {
 		InitialAdminEmail: os.Getenv("INITIAL_ADMIN_EMAIL"),
 
 		SQLDSN:         strings.TrimSpace(os.Getenv("SQL_DSN")),
-		SQLitePath:     getenv("SQLITE_PATH", "data/cubeface.db"),
+		SQLitePath:     getenv("SQLITE_PATH", "data/medrouter.db"),
 		DBMaxOpenConns: intEnv("DB_MAX_OPEN_CONNS", 10),
 
 		EmailVerificationEnabled: boolEnv("EMAIL_VERIFICATION_ENABLED", true),
@@ -123,7 +123,7 @@ func Load() (*Config, error) {
 		SMTPPort:                 intEnv("SMTP_PORT", 465),
 		SMTPUsername:             os.Getenv("SMTP_USERNAME"),
 		SMTPPassword:             os.Getenv("SMTP_PASSWORD"),
-		SMTPFrom:                 getenv("SMTP_FROM", "CubeFace <no-reply@cubeface.local>"),
+		SMTPFrom:                 getenv("SMTP_FROM", "MedRouter <no-reply@medrouter.local>"),
 		SMTPTLSMode:              strings.ToLower(getenv("SMTP_TLS_MODE", "implicit")),
 		SMTPTimeout:              secondsEnv("SMTP_TIMEOUT_SECONDS", 10),
 

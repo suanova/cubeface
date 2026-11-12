@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
+	"github.com/suanova/medrouter/internal/common"
 )
 
 // RequireSameOrigin protects unsafe methods against cross-site requests. It is
