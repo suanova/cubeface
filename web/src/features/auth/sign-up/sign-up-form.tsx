@@ -92,7 +92,7 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
       <div className='space-y-1.5 text-center'>
         <h1 className='text-2xl font-semibold tracking-tight'>{t('Create an account')}</h1>
         <p className='text-sm text-muted-foreground'>
-          {t('Join CubeFace to publish and discover models')}
+          {t('Join MedRouter to publish and discover models')}
         </p>
       </div>
 

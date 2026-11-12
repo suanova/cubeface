@@ -8,18 +8,18 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 const (
 	annotationDescription = "ai.cubestack.io/description"
-	annotationDisplayName = "cubeface.io/display-name"
-	annotationPublisher   = "cubeface.io/publisher"
-	annotationTask        = "cubeface.io/task"
-	annotationLicense     = "cubeface.io/license"
-	annotationTags        = "cubeface.io/tags"
-	annotationUsage       = "cubeface.io/usage-boundary"
-	annotationFeatured    = "cubeface.io/featured"
+	annotationDisplayName = "medrouter.io/display-name"
+	annotationPublisher   = "medrouter.io/publisher"
+	annotationTask        = "medrouter.io/task"
+	annotationLicense     = "medrouter.io/license"
+	annotationTags        = "medrouter.io/tags"
+	annotationUsage       = "medrouter.io/usage-boundary"
+	annotationFeatured    = "medrouter.io/featured"
 
 	labelServingMode = "inference.ai.cubestack.io/serving-mode"
 

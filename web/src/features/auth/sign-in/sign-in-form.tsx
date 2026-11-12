@@ -73,7 +73,7 @@ export function SignInForm({ redirectTo, oauthError }: SignInFormProps) {
       <div className='space-y-1.5 text-center'>
         <h1 className='text-2xl font-semibold tracking-tight'>{t('Welcome back')}</h1>
         <p className='text-sm text-muted-foreground'>
-          {t('Sign in to continue to CubeFace')}
+          {t('Sign in to continue to MedRouter')}
         </p>
       </div>
 

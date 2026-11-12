@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
+	"github.com/suanova/medrouter/internal/common"
 )
 
 const maxBodyBytes = 1 << 20 // 1 MiB

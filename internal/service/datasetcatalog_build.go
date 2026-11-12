@@ -5,14 +5,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 const (
-	annotationAccess           = "cubeface.io/access"
-	annotationDeidentification = "cubeface.io/deidentification"
-	annotationEthics           = "cubeface.io/ethics"
-	annotationSourceRepo       = "cubeface.io/source-repo"
+	annotationAccess           = "medrouter.io/access"
+	annotationDeidentification = "medrouter.io/deidentification"
+	annotationEthics           = "medrouter.io/ethics"
+	annotationSourceRepo       = "medrouter.io/source-repo"
 )
 
 // BuildDatasetList projects raw Dataset CRs into the list response. It is pure

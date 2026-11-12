@@ -115,7 +115,7 @@ func TestListDatasetsDecodesSpec(t *testing.T) {
 		gotPath = r.URL.Path
 		_, _ = w.Write([]byte(`{"metadata":{},"items":[{
 			"metadata":{"name":"demo-v1","creationTimestamp":"2026-11-01T08:00:00Z",
-				"annotations":{"cubeface.io/display-name":"Demo"}},
+				"annotations":{"medrouter.io/display-name":"Demo"}},
 			"spec":{"dataset":"demo","version":"v1","format":"Parquet",
 				"size":"1.2Gi","recordCount":120000,
 				"storage":{"strategy":"S3","s3":{"uri":"s3://bucket/demo","credentialsRef":{"name":"creds"}}}}

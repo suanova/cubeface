@@ -1,6 +1,6 @@
-# CubeFace
+# MedRouter
 
-CubeFace 是一个面向 AI 模型的托管与分享平台（目标类似 Hugging Face / ModelScope）。当前是第一个可运行版本：**账号体系完整闭环**，并带有只读的模型库与数据集库（数据来自 CubeStack 集群 CRD）；模型上传、评测与在线推理尚未实现，首页内容暂留空。
+MedRouter 是一个面向 AI 模型的托管与分享平台（目标类似 Hugging Face / ModelScope）。当前是第一个可运行版本：**账号体系完整闭环**，并带有只读的模型库与数据集库（数据来自 CubeStack 集群 CRD）；模型上传、评测与在线推理尚未实现，首页内容暂留空。
 
 ## 当前功能
 
@@ -39,7 +39,7 @@ CubeFace 是一个面向 AI 模型的托管与分享平台（目标类似 Huggin
 │   ├── middleware/          # 鉴权、同源校验、请求体限制
 │   ├── router/              # 路由装配
 │   └── webui/               # SPA 静态资源与 fallback
-├── helm/cubeface-chart/     # Kubernetes Helm Chart
+├── helm/medrouter-chart/     # Kubernetes Helm Chart
 └── web/                     # Rsbuild 前端
 ```
 
@@ -76,7 +76,7 @@ WARN [email-debug] verification email suppressed to=you@example.com purpose=regi
 ## 生产构建
 
 ```bash
-make build          # 先构建 web/dist，再编译 bin/cubeface
+make build          # 先构建 web/dist，再编译 bin/medrouter
 ```
 
 运行前设置：
@@ -84,40 +84,40 @@ make build          # 先构建 web/dist，再编译 bin/cubeface
 ```bash
 APP_ENV=production
 PORT=3000
-PUBLIC_ORIGIN=https://cubeface.example
+PUBLIC_ORIGIN=https://medrouter.example
 SESSION_SECRET=$(openssl rand -base64 48)
-SQL_DSN=postgres://user:pass@db:5432/cubeface?sslmode=disable   # 或留空使用 SQLite
+SQL_DSN=postgres://user:pass@db:5432/medrouter?sslmode=disable   # 或留空使用 SQLite
 EMAIL_VERIFICATION_ENABLED=true
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_TLS_MODE=starttls
 SMTP_USERNAME=...
 SMTP_PASSWORD=...
-SMTP_FROM="CubeFace <no-reply@cubeface.example>"
+SMTP_FROM="MedRouter <no-reply@medrouter.example>"
 
-./bin/cubeface
+./bin/medrouter
 ```
 
 生产环境启动时会拒绝以下配置：缺少 `SESSION_SECRET` 或长度不足 32、调试邮箱模式未显式放行、开启邮箱验证但未配置 SMTP。生产默认 `SESSION_COOKIE_SECURE=true`，需要 HTTPS。
 
-部署在子路径（例如 `https://example.com/cubeface/`）时：
+部署在子路径（例如 `https://example.com/medrouter/`）时：
 
 ```bash
-BASE_PATH=/cubeface
+BASE_PATH=/medrouter
 PUBLIC_ORIGIN=https://example.com
 ```
 
-Go 会在 SPA HTML 中注入 `<base href="/cubeface/">` 和 `window.__BASE_PATH__`，API、Cookie Path 与 OAuth 回调都会自动带上前缀。
+Go 会在 SPA HTML 中注入 `<base href="/medrouter/">` 和 `window.__BASE_PATH__`，API、Cookie Path 与 OAuth 回调都会自动带上前缀。
 
 ## Kubernetes / Helm
 
-`helm/cubeface-chart` 默认部署一套由 [CloudNativePG](https://cloudnative-pg.io/) 管理的高可用 PostgreSQL：Chart 内嵌 CloudNativePG operator 子 Chart，并渲染 `Cluster` CR（一主多从、流复制、自动故障切换、自签名 TLS）。CubeFace 本身仍是无状态单容器，可随 PostgreSQL 一起扩缩容。
+`helm/medrouter-chart` 默认部署一套由 [CloudNativePG](https://cloudnative-pg.io/) 管理的高可用 PostgreSQL：Chart 内嵌 CloudNativePG operator 子 Chart，并渲染 `Cluster` CR（一主多从、流复制、自动故障切换、自签名 TLS）。MedRouter 本身仍是无状态单容器，可随 PostgreSQL 一起扩缩容。
 
 ```bash
-helm install cubeface ./helm/cubeface-chart \
-  --namespace cubeface --create-namespace
+helm install medrouter ./helm/medrouter-chart \
+  --namespace medrouter --create-namespace
 
-kubectl -n cubeface port-forward svc/cubeface 3000:80
+kubectl -n medrouter port-forward svc/medrouter 3000:80
 # 打开 http://localhost:3000
 ```
 
@@ -125,18 +125,18 @@ kubectl -n cubeface port-forward svc/cubeface 3000:80
 
 ```bash
 # 外部 PostgreSQL（不安装 operator）
-helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace \
+helm install medrouter ./helm/medrouter-chart -n medrouter --create-namespace \
   --set database.mode=external \
   --set database.postgres.operator.install=false \
-  --set 'database.external.dsn=postgres://user:pass@db.example.com:5432/cubeface?sslmode=require'
+  --set 'database.external.dsn=postgres://user:pass@db.example.com:5432/medrouter?sslmode=require'
 
 # 单副本 SQLite（开发/小规模）
-helm install cubeface ./helm/cubeface-chart -n cubeface --create-namespace \
+helm install medrouter ./helm/medrouter-chart -n medrouter --create-namespace \
   --set database.mode=sqlite \
   --set database.postgres.operator.install=false
 ```
 
-Ingress、子路径、PostgreSQL 高可用/备份/PgBouncer、Secret 管理、邮箱与 OAuth 配置、升级注意事项见 [Chart README](helm/cubeface-chart/README.md)。Chart 默认使用的镜像由仓库根目录的 `Dockerfile` 构建（前端 + 后端多阶段构建，运行用户 UID 10001）。
+Ingress、子路径、PostgreSQL 高可用/备份/PgBouncer、Secret 管理、邮箱与 OAuth 配置、升级注意事项见 [Chart README](helm/medrouter-chart/README.md)。Chart 默认使用的镜像由仓库根目录的 `Dockerfile` 构建（前端 + 后端多阶段构建，运行用户 UID 10001）。
 
 CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-postgres.yaml) 会：
 
@@ -146,9 +146,9 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 4. 应用 `hack/kind` 下的最小 CubeStack CRD 与测试对象，验证 `/api/models` 与 `/api/datasets` 能读到 CR、合并同名版本、应用注解并脱敏存储信息；删除两个目录各自的 `ClusterRoleBinding` 后验证接口分别降级为 `FORBIDDEN`，恢复后重新可用；
 5. 通过 `/healthz`、`/api/status`、注册、登录、`/api/user/self` 验证可访问性；
 6. 直接查询 PostgreSQL 主库确认账号与会话确实写入数据库；
-7. 删除主库 Pod 触发自动故障切换，验证新主库选举成功且 CubeFace 恢复服务。
+7. 删除主库 Pod 触发自动故障切换，验证新主库选举成功且 MedRouter 恢复服务。
 
-镜像由两个工作流构建并推送到 `harbor.isuanova.com/suanova/cubeface`：
+镜像由两个工作流构建并推送到 `harbor.isuanova.com/suanova/medrouter`：
 
 - [`.github/workflows/build-image-pr.yaml`](.github/workflows/build-image-pr.yaml)：PR 打开/更新时构建，推送 `pr-<number>` 与 `sha-<short>` 标签，用于预览环境；
 - [`.github/workflows/build-image-push.yaml`](.github/workflows/build-image-push.yaml)：推送到 `main`/`master` 或 `v*` 标签时构建多架构镜像，推送分支名、`sha-<short>`、`v*` 对应的语义化版本，默认分支额外打 `latest`。
@@ -168,7 +168,7 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 | `SESSION_SECRET` | 开发固定值 | 生产必填，≥32 字符；轮换会让所有会话失效 |
 | `REGISTER_ENABLED` | `true` | 关闭后禁止注册 |
 | `SQL_DSN` | 空 | 以 `postgres://` / `postgresql://` 开头时使用 PostgreSQL |
-| `SQLITE_PATH` | `data/cubeface.db` | `SQL_DSN` 为空时使用 |
+| `SQLITE_PATH` | `data/medrouter.db` | `SQL_DSN` 为空时使用 |
 | `EMAIL_VERIFICATION_ENABLED` | `true` | 注册是否要求邮箱验证码 |
 | `EMAIL_DEBUG_MODE` | 非生产为 `true` | 不连 SMTP，验证码写入日志 |
 | `SMTP_TLS_MODE` | `implicit` | `implicit`(465) / `starttls`(587) / `none` |
@@ -201,7 +201,7 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 
 ## 模型库（CubeStack）
 
-`/models` 与 `/models/$name` 不读取 CubeFace 数据库，而是实时读取集群里的 CubeStack 自定义资源（`ai.cubestack.io/v1alpha1`）：
+`/models` 与 `/models/$name` 不读取 MedRouter 数据库，而是实时读取集群里的 CubeStack 自定义资源（`ai.cubestack.io/v1alpha1`）：
 
 - `ModelVersion`：按 `spec.model` 分组，同一模型的多个版本合并为一张卡；`spec.version` 按自然序降序，最新版本置顶。
 - `InferenceRuntimeProfile`：仅当 profile 的 `spec.modelRequirements.architectures` **与** `spec.modelRequirements.quantization` 同时包含版本的值时才视为兼容（空列表不是通配）。
@@ -211,13 +211,13 @@ CI 工作流 [`.github/workflows/kind-postgres.yaml`](.github/workflows/kind-pos
 | 注解 | 用途 |
 |---|---|
 | `ai.cubestack.io/description` | 模型/运行时简介 |
-| `cubeface.io/display-name` | 展示名，回退 `spec.model` |
-| `cubeface.io/publisher` | 发布者 |
-| `cubeface.io/task` | 任务类型（筛选项） |
-| `cubeface.io/license` | 许可证 |
-| `cubeface.io/tags` | 逗号分隔标签（最多 12 个） |
-| `cubeface.io/usage-boundary` | 使用边界提示 |
-| `cubeface.io/featured` | `"true"` 时作为精选 |
+| `medrouter.io/display-name` | 展示名，回退 `spec.model` |
+| `medrouter.io/publisher` | 发布者 |
+| `medrouter.io/task` | 任务类型（筛选项） |
+| `medrouter.io/license` | 许可证 |
+| `medrouter.io/tags` | 逗号分隔标签（最多 12 个） |
+| `medrouter.io/usage-boundary` | 使用边界提示 |
+| `medrouter.io/featured` | `"true"` 时作为精选 |
 
 接口不会下发 `storage.hostPath.path`、`storage.s3.uri`、`credentialsRef.name`、`status.rootPath`，只返回存储策略、容量以及“是否已配置”的布尔值。
 
@@ -243,17 +243,17 @@ Helm Chart 默认创建 ServiceAccount（`serviceAccount.create=true`）和一�
 | 注解 | 用途 |
 |---|---|
 | `ai.cubestack.io/description` | 数据集简介 |
-| `cubeface.io/display-name` | 展示名，回退 `spec.dataset` |
-| `cubeface.io/publisher` | 发布者 |
-| `cubeface.io/task` | 任务类型（筛选项） |
-| `cubeface.io/license` | 许可证 |
-| `cubeface.io/tags` | 逗号分隔标签 |
-| `cubeface.io/access` | 获取方式（如 public / gated） |
-| `cubeface.io/deidentification` | 去标识化说明 |
-| `cubeface.io/ethics` | 伦理依据 |
-| `cubeface.io/source-repo` | 来源仓库 |
-| `cubeface.io/usage-boundary` | 使用边界提示 |
-| `cubeface.io/featured` | `"true"` 时作为精选 |
+| `medrouter.io/display-name` | 展示名，回退 `spec.dataset` |
+| `medrouter.io/publisher` | 发布者 |
+| `medrouter.io/task` | 任务类型（筛选项） |
+| `medrouter.io/license` | 许可证 |
+| `medrouter.io/tags` | 逗号分隔标签 |
+| `medrouter.io/access` | 获取方式（如 public / gated） |
+| `medrouter.io/deidentification` | 去标识化说明 |
+| `medrouter.io/ethics` | 伦理依据 |
+| `medrouter.io/source-repo` | 来源仓库 |
+| `medrouter.io/usage-boundary` | 使用边界提示 |
+| `medrouter.io/featured` | `"true"` 时作为精选 |
 
 存储脱敏规则与模型库一致：不下发 `storage.hostPath.path`、`storage.s3.uri`、`credentialsRef.name`。数据集目录有独立的缓存与开关（`DATASET_LIBRARY_*`），datasets CRD 缺失不会影响 `/api/models`，反之亦然；不可用时返回 200 + `available:false`，健康但名称不存在时返回 404 `DATASET_NOT_FOUND`。
 
@@ -316,4 +316,4 @@ make check      # go vet + tsc + tests
 
 本仓库以 [MIT](LICENSE) 许可证发布。
 
-`helm/cubeface-chart/charts/cloudnative-pg` 是 [CloudNativePG](https://github.com/cloudnative-pg/charts) 的 vendored 副本，按其自带的 Apache-2.0 许可证分发（见该目录下的 `LICENSE`）。
+`helm/medrouter-chart/charts/cloudnative-pg` 是 [CloudNativePG](https://github.com/cloudnative-pg/charts) 的 vendored 副本，按其自带的 Apache-2.0 许可证分发（见该目录下的 `LICENSE`）。

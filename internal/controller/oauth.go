@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/service"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/service"
 )
 
 type OAuthController struct {

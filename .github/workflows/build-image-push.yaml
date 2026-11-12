@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      IMAGE: harbor.isuanova.com/suanova/cubeface
+      IMAGE: harbor.isuanova.com/suanova/medrouter
       # Secrets are not injected into fork/Dependabot runs. Build there, but
       # never attempt to log in or push.
       HAS_REGISTRY_CREDS: ${{ secrets.CI_BOT_PASSWORD != '' && vars.CI_BOT_NAME != '' }}

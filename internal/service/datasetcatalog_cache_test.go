@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 func newTestDatasetCatalog(source kube.Source, clock *time.Time) *DatasetCatalog {

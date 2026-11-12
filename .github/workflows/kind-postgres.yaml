@@ -50,17 +50,17 @@ jobs:
           version: v3.18.4
 
       - name: Lint chart
-        run: helm lint helm/cubeface-chart
+        run: helm lint helm/medrouter-chart
 
       - name: Render the default managed PostgreSQL cluster
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart > /tmp/default.yaml
+          helm template medrouter helm/medrouter-chart > /tmp/default.yaml
           grep -q "kind: Cluster" /tmp/default.yaml
           grep -q "kind: Deployment" /tmp/default.yaml
           grep -q "cloudnative-pg" /tmp/default.yaml
           # The app must consume the generated DSN secret, never a SQLite path.
-          grep -q "cubeface-postgres-dsn" /tmp/default.yaml
+          grep -q "medrouter-postgres-dsn" /tmp/default.yaml
           if grep -q "SQLITE_PATH" /tmp/default.yaml; then
             echo "unexpected SQLITE_PATH in managed PostgreSQL mode"
             exit 1
@@ -69,7 +69,7 @@ jobs:
       - name: Render model library RBAC
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart > /tmp/models.yaml
+          helm template medrouter helm/medrouter-chart > /tmp/models.yaml
           grep -q "kind: ServiceAccount" /tmp/models.yaml
           grep -q "kind: ClusterRole" /tmp/models.yaml
           grep -q "kind: ClusterRoleBinding" /tmp/models.yaml
@@ -110,21 +110,21 @@ jobs:
             isSA && /^  name: / { name = $0 }
             { doc = doc $0 "\n" }
             /^---$/ {
-              if (isSA && name == "  name: cubeface") print doc
+              if (isSA && name == "  name: medrouter") print doc
               doc = ""
               isSA = 0
             }
-            END { if (isSA && name == "  name: cubeface") print doc }
+            END { if (isSA && name == "  name: medrouter") print doc }
           ' /tmp/models.yaml > /tmp/model-serviceaccount.yaml
           test -s /tmp/model-serviceaccount.yaml
-          grep -q "^  name: cubeface$" /tmp/model-serviceaccount.yaml
+          grep -q "^  name: medrouter$" /tmp/model-serviceaccount.yaml
           # The pod has to run as that account for the binding to apply.
-          grep -q 'serviceAccountName: "cubeface"' /tmp/models.yaml
+          grep -q 'serviceAccountName: "medrouter"' /tmp/models.yaml
           grep -q "automountServiceAccountToken: true" /tmp/models.yaml
           grep -q 'MODEL_LIBRARY_ENABLED: "true"' /tmp/models.yaml
 
           # Disabling the library removes both the feature and its cluster RBAC.
-          helm template cubeface helm/cubeface-chart --set modelLibrary.enabled=false > /tmp/models-disabled.yaml
+          helm template medrouter helm/medrouter-chart --set modelLibrary.enabled=false > /tmp/models-disabled.yaml
           grep -q 'MODEL_LIBRARY_ENABLED: "false"' /tmp/models-disabled.yaml
           if grep -q "model-library" /tmp/models-disabled.yaml; then
             echo "model library RBAC must not render when the library is disabled"
@@ -136,7 +136,7 @@ jobs:
           fi
 
           # Opting out of RBAC keeps the app but lets operators manage access.
-          helm template cubeface helm/cubeface-chart --set modelLibrary.rbac.create=false > /tmp/models-no-rbac.yaml
+          helm template medrouter helm/medrouter-chart --set modelLibrary.rbac.create=false > /tmp/models-no-rbac.yaml
           grep -q 'MODEL_LIBRARY_ENABLED: "true"' /tmp/models-no-rbac.yaml
           if grep -Eq "modelversions|inferenceruntimeprofiles" /tmp/models-no-rbac.yaml; then
             echo "model library RBAC must not render with rbac.create=false"
@@ -146,23 +146,23 @@ jobs:
       - name: Render dataset library RBAC
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart > /tmp/datasets.yaml
+          helm template medrouter helm/medrouter-chart > /tmp/datasets.yaml
           grep -q 'DATASET_LIBRARY_ENABLED: "true"' /tmp/datasets.yaml
           grep -q 'DATASET_LIBRARY_CACHE_TTL_SECONDS: "30"' /tmp/datasets.yaml
           grep -q 'DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS: "5"' /tmp/datasets.yaml
           # Separate labels let operators and this workflow select each catalog.
-          grep -q "cubeface.io/catalog: datasets" /tmp/datasets.yaml
-          grep -q "cubeface.io/catalog: models" /tmp/datasets.yaml
+          grep -q "medrouter.io/catalog: datasets" /tmp/datasets.yaml
+          grep -q "medrouter.io/catalog: models" /tmp/datasets.yaml
           # The dataset ClusterRole must list datasets only, and list-only.
           awk '
             /^kind: / { isRole = ($0 == "kind: ClusterRole") }
             { doc = doc $0 "\n" }
             /^---$/ {
-              if (isRole && doc ~ /cubeface[.]io\/catalog: datasets/) print doc
+              if (isRole && doc ~ /medrouter[.]io\/catalog: datasets/) print doc
               doc = ""
               isRole = 0
             }
-            END { if (isRole && doc ~ /cubeface[.]io\/catalog: datasets/) print doc }
+            END { if (isRole && doc ~ /medrouter[.]io\/catalog: datasets/) print doc }
           ' /tmp/datasets.yaml > /tmp/dataset-library-role.yaml
           test -s /tmp/dataset-library-role.yaml
           grep -q -- "- datasets" /tmp/dataset-library-role.yaml
@@ -179,27 +179,27 @@ jobs:
             /^kind: / { isBinding = ($0 == "kind: ClusterRoleBinding") }
             { doc = doc $0 "\n" }
             /^---$/ {
-              if (isBinding && doc ~ /cubeface[.]io\/catalog: datasets/) print doc
+              if (isBinding && doc ~ /medrouter[.]io\/catalog: datasets/) print doc
               doc = ""
               isBinding = 0
             }
-            END { if (isBinding && doc ~ /cubeface[.]io\/catalog: datasets/) print doc }
+            END { if (isBinding && doc ~ /medrouter[.]io\/catalog: datasets/) print doc }
           ' /tmp/datasets.yaml > /tmp/dataset-library-binding.yaml
           test -s /tmp/dataset-library-binding.yaml
           grep -q "kind: ClusterRoleBinding" /tmp/dataset-library-binding.yaml
-          grep -q 'serviceAccountName: "cubeface"' /tmp/datasets.yaml
+          grep -q 'serviceAccountName: "medrouter"' /tmp/datasets.yaml
 
           # Disabling the dataset library leaves the model library untouched.
-          helm template cubeface helm/cubeface-chart --set datasetLibrary.enabled=false > /tmp/datasets-disabled.yaml
+          helm template medrouter helm/medrouter-chart --set datasetLibrary.enabled=false > /tmp/datasets-disabled.yaml
           grep -q 'DATASET_LIBRARY_ENABLED: "false"' /tmp/datasets-disabled.yaml
           if grep -q "catalog: datasets" /tmp/datasets-disabled.yaml; then
             echo "dataset library RBAC must not render when the library is disabled"
             exit 1
           fi
-          grep -q "cubeface.io/catalog: models" /tmp/datasets-disabled.yaml
+          grep -q "medrouter.io/catalog: models" /tmp/datasets-disabled.yaml
 
           # Opting out of RBAC keeps the feature enabled.
-          helm template cubeface helm/cubeface-chart --set datasetLibrary.rbac.create=false > /tmp/datasets-no-rbac.yaml
+          helm template medrouter helm/medrouter-chart --set datasetLibrary.rbac.create=false > /tmp/datasets-no-rbac.yaml
           grep -q 'DATASET_LIBRARY_ENABLED: "true"' /tmp/datasets-no-rbac.yaml
           if grep -q "catalog: datasets" /tmp/datasets-no-rbac.yaml; then
             echo "dataset library RBAC must not render with rbac.create=false"
@@ -207,7 +207,7 @@ jobs:
           fi
 
           # With both libraries off the pod mounts no service account token.
-          helm template cubeface helm/cubeface-chart \
+          helm template medrouter helm/medrouter-chart \
             --set modelLibrary.enabled=false \
             --set datasetLibrary.enabled=false > /tmp/catalogs-off.yaml
           if grep -q "automountServiceAccountToken" /tmp/catalogs-off.yaml; then
@@ -218,10 +218,10 @@ jobs:
       - name: Render SQLite with Ingress and base path
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart \
+          helm template medrouter helm/medrouter-chart \
             --set database.mode=sqlite \
             --set database.postgres.operator.install=false \
-            --set config.BASE_PATH=/cubeface \
+            --set config.BASE_PATH=/medrouter \
             --set ingress.enabled=true \
             --set 'ingress.hosts[0]=models.example.com' \
             --set ingress.tls.enabled=true \
@@ -231,26 +231,26 @@ jobs:
       - name: Render external PostgreSQL with two replicas
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart \
+          helm template medrouter helm/medrouter-chart \
             --set database.mode=external \
             --set database.postgres.operator.install=false \
-            --set-string 'database.external.dsn=postgres://u:p@db.example.com:5432/cubeface?sslmode=require' \
+            --set-string 'database.external.dsn=postgres://u:p@db.example.com:5432/medrouter?sslmode=require' \
             --set replicaCount=2 \
             > /dev/null
 
       - name: Render with an external Secret
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart \
+          helm template medrouter helm/medrouter-chart \
             --set database.postgres.operator.install=false \
             --set secret.create=false \
-            --set secret.existingSecret=cubeface-credentials \
+            --set secret.existingSecret=medrouter-credentials \
             > /dev/null
 
       - name: Render backups and the PgBouncer pooler
         run: |
           set -euo pipefail
-          helm template cubeface helm/cubeface-chart \
+          helm template medrouter helm/medrouter-chart \
             --set database.postgres.operator.install=false \
             --set database.postgres.backups.enabled=true \
             --set database.postgres.pgBouncer.enabled=true \
@@ -262,7 +262,7 @@ jobs:
         run: |
           set -euo pipefail
           reject() {
-            if helm template invalid helm/cubeface-chart "$@" > /dev/null 2>&1; then
+            if helm template invalid helm/medrouter-chart "$@" > /dev/null 2>&1; then
               echo "expected this configuration to be rejected: $*"
               exit 1
             fi
@@ -299,7 +299,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: cubeface:ci
+          tags: medrouter:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -309,20 +309,20 @@ jobs:
 
       - uses: helm/kind-action@v1
         with:
-          cluster_name: cubeface
+          cluster_name: medrouter
           node_image: kindest/node:v1.31.0
           wait: 120s
 
       - name: Load image into KinD
-        run: kind load docker-image cubeface:ci --name cubeface
+        run: kind load docker-image medrouter:ci --name medrouter
 
-      - name: Install CubeFace with its managed PostgreSQL cluster
+      - name: Install MedRouter with its managed PostgreSQL cluster
         run: |
           set -euo pipefail
-          kubectl create namespace cubeface
-          helm install cubeface helm/cubeface-chart \
-            --namespace cubeface \
-            --set image.repository=cubeface \
+          kubectl create namespace medrouter
+          helm install medrouter helm/medrouter-chart \
+            --namespace medrouter \
+            --set image.repository=medrouter \
             --set-string image.tag=ci \
             --set image.pullPolicy=Never \
             --set config.PUBLIC_ORIGIN=http://localhost:3000 \
@@ -334,33 +334,33 @@ jobs:
             --timeout 15m
           # The app pod waits for the CNPG primary in its init container, so
           # this also covers the first bootstrap of a 3-instance cluster.
-          kubectl -n cubeface rollout status deployment/cubeface --timeout=10m
-          kubectl -n cubeface get pods -o wide
+          kubectl -n medrouter rollout status deployment/medrouter --timeout=10m
+          kubectl -n medrouter get pods -o wide
 
       - name: Verify the HA PostgreSQL cluster is ready
         run: |
           set -euo pipefail
-          kubectl -n cubeface wait --for=condition=Ready cluster/cubeface-postgres --timeout=10m
-          instances=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.instances}')
-          ready=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.readyInstances}')
-          primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
+          kubectl -n medrouter wait --for=condition=Ready cluster/medrouter-postgres --timeout=10m
+          instances=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.instances}')
+          ready=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.readyInstances}')
+          primary=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.currentPrimary}')
           echo "instances=$instances ready=$ready primary=$primary"
           test "$instances" = "3"
           test "$ready" = "3"
           test -n "$primary"
-          pods=$(kubectl -n cubeface get pods -l cnpg.io/cluster=cubeface-postgres --no-headers | wc -l)
+          pods=$(kubectl -n medrouter get pods -l cnpg.io/cluster=medrouter-postgres --no-headers | wc -l)
           test "$pods" = "3"
 
       - name: Verify the app uses the managed PostgreSQL cluster
         run: |
           set -euo pipefail
-          sqlite_path=$(kubectl -n cubeface get configmap cubeface-config -o jsonpath='{.data.SQLITE_PATH}')
+          sqlite_path=$(kubectl -n medrouter get configmap medrouter-config -o jsonpath='{.data.SQLITE_PATH}')
           test -z "$sqlite_path"
-          dsn=$(kubectl -n cubeface get secret cubeface-postgres-dsn -o jsonpath='{.data.SQL_DSN}' | base64 --decode)
+          dsn=$(kubectl -n medrouter get secret medrouter-postgres-dsn -o jsonpath='{.data.SQL_DSN}' | base64 --decode)
           echo "dsn host: $(printf '%s' "$dsn" | sed -E 's#^[^@]*@##; s#/.*##')"
           printf '%s' "$dsn" | grep -q '^postgresql://'
-          printf '%s' "$dsn" | grep -q '@cubeface-postgres-rw:5432/cubeface?sslmode=require'
-          wait_image=$(kubectl -n cubeface get deployment cubeface -o jsonpath='{.spec.template.spec.initContainers[0].image}')
+          printf '%s' "$dsn" | grep -q '@medrouter-postgres-rw:5432/medrouter?sslmode=require'
+          wait_image=$(kubectl -n medrouter get deployment medrouter -o jsonpath='{.spec.template.spec.initContainers[0].image}')
           echo "wait-for-postgres image: $wait_image"
           printf '%s' "$wait_image" | grep -q 'cloudnative-pg/postgresql'
 
@@ -378,10 +378,10 @@ jobs:
           kubectl get inferenceruntimeprofiles.ai.cubestack.io -o wide
           kubectl get datasets.ai.cubestack.io -o wide
 
-      - name: Verify CubeFace is reachable and uses PostgreSQL
+      - name: Verify MedRouter is reachable and uses PostgreSQL
         run: |
           set -euo pipefail
-          kubectl -n cubeface port-forward svc/cubeface 3000:80 >/tmp/port-forward.log 2>&1 &
+          kubectl -n medrouter port-forward svc/medrouter 3000:80 >/tmp/port-forward.log 2>&1 &
           echo $! > /tmp/port-forward.pid
 
           for i in $(seq 1 60); do
@@ -403,7 +403,7 @@ jobs:
           echo "landing page:"
           curl -fsS http://127.0.0.1:3000/ | tee /tmp/index.html
           grep -q '<div id="root"' /tmp/index.html
-          grep -q '<title>CubeFace</title>' /tmp/index.html
+          grep -q '<title>MedRouter</title>' /tmp/index.html
           curl -fsS http://127.0.0.1:3000/sign-in | grep -q '<div id="root"'
 
           echo "status:"
@@ -433,11 +433,11 @@ jobs:
 
           # Query the primary directly: the account and its session must be
           # rows in the CNPG cluster, not in a local SQLite file.
-          primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
-          users=$(kubectl -n cubeface exec "$primary" -c postgres -- \
-            psql -U postgres -d cubeface -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
-          sessions=$(kubectl -n cubeface exec "$primary" -c postgres -- \
-            psql -U postgres -d cubeface -tAc \
+          primary=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.currentPrimary}')
+          users=$(kubectl -n medrouter exec "$primary" -c postgres -- \
+            psql -U postgres -d medrouter -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
+          sessions=$(kubectl -n medrouter exec "$primary" -c postgres -- \
+            psql -U postgres -d medrouter -tAc \
             "select count(*) from user_sessions where user_id = (select id from users where username = 'ciuser')" | tr -d '[:space:]')
           echo "postgres users=$users sessions=$sessions"
           test "$users" = "1"
@@ -471,8 +471,8 @@ jobs:
             .data.profile_total == 1 and
             .data.models[0].model == "demo-model" and
             .data.models[0].display_name == "Demo Model" and
-            .data.models[0].publisher == "CubeFace CI" and
-            .data.models[0].publisher_initials == "CC" and
+            .data.models[0].publisher == "MedRouter CI" and
+            .data.models[0].publisher_initials == "MC" and
             .data.models[0].license == "Apache-2.0" and
             .data.models[0].task == "chat" and
             .data.models[0].featured == true and
@@ -546,8 +546,8 @@ jobs:
             .data.version_total == 2 and
             .data.datasets[0].dataset == "demo-dataset" and
             .data.datasets[0].display_name == "Demo Dataset" and
-            .data.datasets[0].publisher == "CubeFace CI" and
-            .data.datasets[0].publisher_initials == "CC" and
+            .data.datasets[0].publisher == "MedRouter CI" and
+            .data.datasets[0].publisher_initials == "MC" and
             .data.datasets[0].format == "Parquet" and
             .data.datasets[0].task == "sft" and
             .data.datasets[0].license == "CC-BY-4.0" and
@@ -606,17 +606,17 @@ jobs:
         run: |
           set -euo pipefail
           model_binding=$(kubectl get clusterrolebinding \
-            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface,cubeface.io/catalog=models \
+            -l app.kubernetes.io/instance=medrouter,app.kubernetes.io/name=medrouter,medrouter.io/catalog=models \
             -o jsonpath='{.items[0].metadata.name}')
           dataset_binding=$(kubectl get clusterrolebinding \
-            -l app.kubernetes.io/instance=cubeface,app.kubernetes.io/name=cubeface,cubeface.io/catalog=datasets \
+            -l app.kubernetes.io/instance=medrouter,app.kubernetes.io/name=medrouter,medrouter.io/catalog=datasets \
             -o jsonpath='{.items[0].metadata.name}')
           test -n "$model_binding"
           test -n "$dataset_binding"
           test "$model_binding" != "$dataset_binding"
           model_role=$(kubectl get clusterrolebinding "$model_binding" -o jsonpath='{.roleRef.name}')
           dataset_role=$(kubectl get clusterrolebinding "$dataset_binding" -o jsonpath='{.roleRef.name}')
-          sa=$(kubectl -n cubeface get deployment cubeface \
+          sa=$(kubectl -n medrouter get deployment medrouter \
             -o jsonpath='{.spec.template.spec.serviceAccountName}')
           echo "removing $model_binding (role $model_role) and $dataset_binding (role $dataset_role)"
           kubectl delete clusterrolebinding "$model_binding" "$dataset_binding"
@@ -657,10 +657,10 @@ jobs:
 
           kubectl create clusterrolebinding "$model_binding" \
             --clusterrole="$model_role" \
-            --serviceaccount="cubeface:$sa"
+            --serviceaccount="medrouter:$sa"
           kubectl create clusterrolebinding "$dataset_binding" \
             --clusterrole="$dataset_role" \
-            --serviceaccount="cubeface:$sa"
+            --serviceaccount="medrouter:$sa"
 
           # And both catalogs recover once access is restored.
           for i in $(seq 1 60); do
@@ -679,16 +679,16 @@ jobs:
             sleep 2
           done
 
-      - name: Fail over the primary and verify CubeFace recovers
+      - name: Fail over the primary and verify MedRouter recovers
         run: |
           set -euo pipefail
-          old_primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}')
+          old_primary=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.currentPrimary}')
           echo "deleting primary pod $old_primary"
-          kubectl -n cubeface delete pod "$old_primary" --wait=false
+          kubectl -n medrouter delete pod "$old_primary" --wait=false
 
           new_primary=""
           for i in $(seq 1 120); do
-            new_primary=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+            new_primary=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
             if [ -n "$new_primary" ] && [ "$new_primary" != "$old_primary" ]; then
               break
             fi
@@ -699,13 +699,13 @@ jobs:
           test "$new_primary" != "$old_primary"
 
           for i in $(seq 1 150); do
-            ready=$(kubectl -n cubeface get cluster cubeface-postgres -o jsonpath='{.status.readyInstances}' 2>/dev/null || true)
+            ready=$(kubectl -n medrouter get cluster medrouter-postgres -o jsonpath='{.status.readyInstances}' 2>/dev/null || true)
             if [ "$ready" = "3" ]; then
               break
             fi
             if [ "$i" -eq 150 ]; then
               echo "cluster did not return to 3 ready instances"
-              kubectl -n cubeface get cluster cubeface-postgres -o yaml
+              kubectl -n medrouter get cluster medrouter-postgres -o yaml
               exit 1
             fi
             sleep 2
@@ -716,27 +716,27 @@ jobs:
               break
             fi
             if [ "$i" -eq 60 ]; then
-              echo "CubeFace did not recover after the PostgreSQL failover"
+              echo "MedRouter did not recover after the PostgreSQL failover"
               cat /tmp/port-forward.log || true
               exit 1
             fi
             sleep 2
           done
 
-          users=$(kubectl -n cubeface exec "$new_primary" -c postgres -- \
-            psql -U postgres -d cubeface -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
+          users=$(kubectl -n medrouter exec "$new_primary" -c postgres -- \
+            psql -U postgres -d medrouter -tAc "select count(*) from users where username = 'ciuser'" | tr -d '[:space:]')
           echo "postgres users after failover=$users"
           test "$users" = "1"
 
       - name: Dump diagnostics on failure
         if: failure()
         run: |
-          kubectl -n cubeface get all -o wide || true
-          kubectl -n cubeface get cluster -o yaml || true
-          kubectl -n cubeface describe pods || true
-          kubectl -n cubeface logs deployment/cubeface --all-containers --tail=200 || true
-          kubectl -n cubeface logs deployment/cubeface-cloudnative-pg --tail=200 || true
-          kubectl -n cubeface get events --sort-by=.lastTimestamp | tail -50 || true
+          kubectl -n medrouter get all -o wide || true
+          kubectl -n medrouter get cluster -o yaml || true
+          kubectl -n medrouter describe pods || true
+          kubectl -n medrouter logs deployment/medrouter --all-containers --tail=200 || true
+          kubectl -n medrouter logs deployment/medrouter-cloudnative-pg --tail=200 || true
+          kubectl -n medrouter get events --sort-by=.lastTimestamp | tail -50 || true
 
       - name: Stop port-forward
         if: always()

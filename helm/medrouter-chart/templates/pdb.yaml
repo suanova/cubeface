@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "cubeface.fullname" . }}
+  name: {{ include "medrouter.fullname" . }}
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
 spec:
   minAvailable: {{ .Values.pdb.minAvailable }}
   selector:
     matchLabels:
-      {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 6 }}
+      {{- include "medrouter.selectorLabels" (dict "root" . "component" "app") | nindent 6 }}
 {{- end }}

@@ -12,7 +12,7 @@ import (
 func testDist() fstest.MapFS {
 	return fstest.MapFS{
 		"web/dist/index.html": &fstest.MapFile{
-			Data: []byte("<!doctype html><html><head><title>CubeFace</title></head><body><div id=\"root\"></div></body></html>"),
+			Data: []byte("<!doctype html><html><head><title>MedRouter</title></head><body><div id=\"root\"></div></body></html>"),
 		},
 		"web/dist/static/js/index.abc123.js":   &fstest.MapFile{Data: []byte("console.log('ok')")},
 		"web/dist/static/css/index.abc123.css": &fstest.MapFile{Data: []byte("body{}")},
@@ -40,7 +40,7 @@ func TestServesSPAAndAssets(t *testing.T) {
 	if cc := rec.Header().Get("Cache-Control"); cc != "no-store" {
 		t.Fatalf("index cache control = %q", cc)
 	}
-	if got := rec.Body.String(); !strings.Contains(got, "CubeFace") ||
+	if got := rec.Body.String(); !strings.Contains(got, "MedRouter") ||
 		!strings.Contains(got, `<base href="/">`) ||
 		strings.Contains(got, "window.__BASE_PATH__") {
 		t.Fatalf("unexpected index body: %s", got)
@@ -48,7 +48,7 @@ func TestServesSPAAndAssets(t *testing.T) {
 
 	// Deep links fall back to the SPA shell.
 	rec = do(t, h, http.MethodGet, "/dashboard/settings")
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "CubeFace") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "MedRouter") {
 		t.Fatalf("SPA fallback = %d %s", rec.Code, rec.Body.String())
 	}
 
@@ -85,35 +85,35 @@ func TestServesSPAAndAssets(t *testing.T) {
 }
 
 func TestInjectsBasePath(t *testing.T) {
-	h := New(testDist(), "/cubeface")
+	h := New(testDist(), "/medrouter")
 
 	if rec := do(t, h, http.MethodGet, "/"); rec.Code != http.StatusNotFound {
 		t.Fatalf("root outside base path = %d", rec.Code)
 	}
 
-	rec := do(t, h, http.MethodGet, "/cubeface")
+	rec := do(t, h, http.MethodGet, "/medrouter")
 	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /cubeface = %d", rec.Code)
+		t.Fatalf("GET /medrouter = %d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, `<base href="/cubeface/">`) {
+	if !strings.Contains(body, `<base href="/medrouter/">`) {
 		t.Fatalf("missing base tag: %s", body)
 	}
-	if !strings.Contains(body, `window.__BASE_PATH__="/cubeface";`) {
+	if !strings.Contains(body, `window.__BASE_PATH__="/medrouter";`) {
 		t.Fatalf("missing base path global: %s", body)
 	}
 
-	rec = do(t, h, http.MethodGet, "/cubeface/dashboard")
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `<base href="/cubeface/">`) {
+	rec = do(t, h, http.MethodGet, "/medrouter/dashboard")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `<base href="/medrouter/">`) {
 		t.Fatalf("prefixed SPA fallback = %d %s", rec.Code, rec.Body.String())
 	}
 
-	rec = do(t, h, http.MethodGet, "/cubeface/static/js/index.abc123.js")
+	rec = do(t, h, http.MethodGet, "/medrouter/static/js/index.abc123.js")
 	if rec.Code != http.StatusOK || rec.Body.String() != "console.log('ok')" {
 		t.Fatalf("prefixed asset = %d %q", rec.Code, rec.Body.String())
 	}
 
-	if rec = do(t, h, http.MethodGet, "/cubefacex/static/js/index.abc123.js"); rec.Code != http.StatusNotFound {
+	if rec = do(t, h, http.MethodGet, "/medrouterx/static/js/index.abc123.js"); rec.Code != http.StatusNotFound {
 		t.Fatalf("prefix lookalike = %d", rec.Code)
 	}
 }

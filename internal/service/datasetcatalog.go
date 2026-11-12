@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/kube"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/kube"
 )
 
 // datasetSnapshot is an immutable view of one refresh attempt.

@@ -97,7 +97,7 @@ func TestDatasetLibraryConfig(t *testing.T) {
 
 func TestLoadBasePath(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("BASE_PATH", "/cubeface/")
+	t.Setenv("BASE_PATH", "/medrouter/")
 	t.Setenv("PUBLIC_ORIGIN", "https://example.com/")
 	t.Setenv("OAUTH_REDIRECT_BASE", "https://auth.example.com/prefix/")
 
@@ -105,16 +105,16 @@ func TestLoadBasePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.BasePath != "/cubeface" {
+	if cfg.BasePath != "/medrouter" {
 		t.Fatalf("base path = %q", cfg.BasePath)
 	}
 	if cfg.PublicOrigin != "https://example.com" {
 		t.Fatalf("public origin = %q", cfg.PublicOrigin)
 	}
-	if got := cfg.FrontendPath("sign-in"); got != "/cubeface/sign-in" {
+	if got := cfg.FrontendPath("sign-in"); got != "/medrouter/sign-in" {
 		t.Fatalf("frontend path = %q", got)
 	}
-	if got := cfg.FrontendPath(""); got != "/cubeface/" {
+	if got := cfg.FrontendPath(""); got != "/medrouter/" {
 		t.Fatalf("frontend root = %q", got)
 	}
 	if got := cfg.CallbackURL("google"); got != "https://auth.example.com/prefix/api/oauth/google/callback" {

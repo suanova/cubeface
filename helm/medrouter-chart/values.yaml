@@ -1,6 +1,6 @@
-# Default values for cubeface-chart.
+# Default values for medrouter-chart.
 #
-# CubeFace is a single Go binary with the React frontend embedded. The chart
+# MedRouter is a single Go binary with the React frontend embedded. The chart
 # runs one container and needs no Redis. Choose a database:
 #   postgres : HA PostgreSQL managed by CloudNativePG (default) -- the chart
 #              vendors the operator and renders a Cluster CR with streaming
@@ -17,7 +17,7 @@ image:
   # Build and push the image from this repository, or point this at your own
   # registry. An empty tag follows .Chart.AppVersion.
   # Images are built and pushed here by .github/workflows/build-image-push.yaml.
-  repository: harbor.isuanova.com/suanova/cubeface
+  repository: harbor.isuanova.com/suanova/medrouter
   tag: ""
   pullPolicy: IfNotPresent
 
@@ -108,9 +108,9 @@ database:
         memory: 4Gi
     auth:
       # Database and owner role created by bootstrap.initdb.
-      database: cubeface
+      database: medrouter
       # PostgreSQL identifier (no hyphens): [a-z_][a-z0-9_]* only.
-      username: cubeface
+      username: medrouter
     # Block pod startup until the primary accepts connections.
     waitForPostgres: true
     # Add helm.sh/resource-policy: keep to the Cluster so `helm uninstall`
@@ -133,7 +133,7 @@ database:
       #     secretAccessKey:
       #       name: cnpg-backup-s3-creds
       #       key: ACCESS_SECRET_KEY
-    # Optional PgBouncer pooler in front of the primary. CubeFace keeps
+    # Optional PgBouncer pooler in front of the primary. MedRouter keeps
     # connecting to the -rw service directly; enable the pooler only if other
     # clients need it.
     pgBouncer:
@@ -142,7 +142,7 @@ database:
 
   external:
     # Full libpq DSN, e.g.
-    # postgres://user:pass@db.example.com:5432/cubeface?sslmode=require
+    # postgres://user:pass@db.example.com:5432/medrouter?sslmode=require
     # Stored in the chart-created Secret, never in the ConfigMap.
     # Ignored when secret.create=false: put SQL_DSN in secret.existingSecret.
     dsn: ""
@@ -151,7 +151,7 @@ database:
     waitImage: postgres:17-alpine
 
 # Used only with database.mode=sqlite. The volume is mounted at /data and the
-# database lives at /data/cubeface.db.
+# database lives at /data/medrouter.db.
 persistence:
   enabled: true
   # Keep the PVC when the release is uninstalled. Set false for throwaway
@@ -173,7 +173,7 @@ persistence:
 # ---------------------------------------------------------------------------
 config:
   PORT: "3000"
-  # URL path prefix, e.g. "/cubeface". The Ingress publishes this exact prefix;
+  # URL path prefix, e.g. "/medrouter". The Ingress publishes this exact prefix;
   # no rewrite is applied. Empty means the site root.
   BASE_PATH: ""
   # Browser-visible origin. Empty means: https://<first ingress host> when the
@@ -181,7 +181,7 @@ config:
   # address users type in the browser: login POSTs are origin-checked and OAuth
   # callbacks redirect here.
   PUBLIC_ORIGIN: ""
-  SYSTEM_NAME: CubeFace
+  SYSTEM_NAME: MedRouter
 
   REGISTER_ENABLED: "true"
   # Registration email verification is off by default so a fresh install needs
@@ -204,7 +204,7 @@ config:
   SMTP_HOST: ""
   SMTP_PORT: "465"
   SMTP_TLS_MODE: implicit # implicit | starttls | none
-  SMTP_FROM: "CubeFace <no-reply@cubeface.local>"
+  SMTP_FROM: "MedRouter <no-reply@medrouter.local>"
   SMTP_USERNAME: ""
 
   # OAuth providers appear on the sign-in page only when their client ID and

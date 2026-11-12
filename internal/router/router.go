@@ -7,12 +7,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/controller"
-	"github.com/cubeface/cubeface/internal/middleware"
-	"github.com/cubeface/cubeface/internal/service"
-	"github.com/cubeface/cubeface/internal/webui"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/controller"
+	"github.com/suanova/medrouter/internal/middleware"
+	"github.com/suanova/medrouter/internal/service"
+	"github.com/suanova/medrouter/internal/webui"
 )
 
 type Deps struct {

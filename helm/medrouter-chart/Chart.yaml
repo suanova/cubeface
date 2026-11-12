@@ -1,21 +1,21 @@
 apiVersion: v2
-name: cubeface-chart
-description: CubeFace model hub (account/auth + landing page) with HA PostgreSQL (CloudNativePG) or SQLite
+name: medrouter-chart
+description: MedRouter model hub (account/auth + landing page) with HA PostgreSQL (CloudNativePG) or SQLite
 type: application
 version: 0.2.0
 appVersion: "0.1.0"
 kubeVersion: ">=1.29.0-0"
-home: https://github.com/cubeface/cubeface
+home: https://github.com/suanova/medrouter
 keywords:
-  - cubeface
+  - medrouter
   - model-hub
   - huggingface
   - modelscope
   - postgresql
   - cloudnative-pg
 maintainers:
-  - name: CubeFace
-    url: https://github.com/cubeface/cubeface
+  - name: MedRouter
+    url: https://github.com/suanova/medrouter
 dependencies:
   # Vendored from https://github.com/cloudnative-pg/charts (chart 0.29.0,
   # operator 1.30.0, Apache-2.0). Installs the CloudNativePG control plane and

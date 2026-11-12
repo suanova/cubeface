@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/model"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/model"
 )
 
 type fakeProvider struct {
@@ -34,10 +34,10 @@ func newOAuthTest(t *testing.T) (*OAuthService, *config.Config) {
 	t.Helper()
 	cfg := &config.Config{
 		AppEnv:                   "test",
-		SystemName:               "CubeFace",
+		SystemName:               "MedRouter",
 		PublicOrigin:             "http://example.test",
 		SessionSecret:            "oauth-test-session-secret-0123456789",
-		SessionCookieName:        "cubeface_session",
+		SessionCookieName:        "medrouter_session",
 		SessionTTL:               time.Hour,
 		SessionTouchInterval:     time.Minute,
 		RegisterEnabled:          true,

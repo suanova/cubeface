@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/model"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/model"
 )
 
-const oauthStateCookieName = "cubeface_oauth_state"
+const oauthStateCookieName = "medrouter_oauth_state"
 const oauthStateTTL = 10 * time.Minute
 
 // OAuthIdentity is the normalized result of a provider callback.

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cubeface/cubeface/internal/config"
+	"github.com/suanova/medrouter/internal/config"
 )
 
 type EmailService struct {

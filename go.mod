@@ -1,4 +1,4 @@
-module github.com/cubeface/cubeface
+module github.com/suanova/medrouter
 
 go 1.27.0
 

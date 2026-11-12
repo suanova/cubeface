@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/config"
-	"github.com/cubeface/cubeface/internal/model"
-	"github.com/cubeface/cubeface/internal/service"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/config"
+	"github.com/suanova/medrouter/internal/model"
+	"github.com/suanova/medrouter/internal/service"
 )
 
 type UserController struct {
@@ -93,7 +93,7 @@ func (h *UserController) Self(c *gin.Context) {
 }
 
 func currentUser(c *gin.Context) *model.User {
-	value, ok := c.Get("cubeface.user")
+	value, ok := c.Get("medrouter.user")
 	if !ok {
 		return nil
 	}

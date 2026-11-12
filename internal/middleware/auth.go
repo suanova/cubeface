@@ -5,14 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cubeface/cubeface/internal/common"
-	"github.com/cubeface/cubeface/internal/model"
-	"github.com/cubeface/cubeface/internal/service"
+	"github.com/suanova/medrouter/internal/common"
+	"github.com/suanova/medrouter/internal/model"
+	"github.com/suanova/medrouter/internal/service"
 )
 
 const (
-	ContextUserKey    = "cubeface.user"
-	ContextSessionKey = "cubeface.session"
+	ContextUserKey    = "medrouter.user"
+	ContextSessionKey = "medrouter.session"
 )
 
 // RequireAuth resolves the opaque session cookie and injects the current user.

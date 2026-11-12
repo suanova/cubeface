@@ -15,22 +15,22 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/web/dist ./web/dist
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/cubeface .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/medrouter .
 
 # ---- runtime --------------------------------------------------------------
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates tzdata \
-    && addgroup -S -g 10001 cubeface \
-    && adduser -S -u 10001 -G cubeface -h /home/cubeface cubeface \
-    && mkdir -p /data /home/cubeface \
-    && chown -R 10001:10001 /data /home/cubeface
+    && addgroup -S -g 10001 medrouter \
+    && adduser -S -u 10001 -G medrouter -h /home/medrouter medrouter \
+    && mkdir -p /data /home/medrouter \
+    && chown -R 10001:10001 /data /home/medrouter
 
-COPY --from=build --chown=10001:10001 /out/cubeface /usr/local/bin/cubeface
+COPY --from=build --chown=10001:10001 /out/medrouter /usr/local/bin/medrouter
 
 ENV APP_ENV=production \
-    HOME=/home/cubeface \
-    SQLITE_PATH=/data/cubeface.db
+    HOME=/home/medrouter \
+    SQLITE_PATH=/data/medrouter.db
 
 USER 10001:10001
 EXPOSE 3000
-ENTRYPOINT ["/usr/local/bin/cubeface"]
+ENTRYPOINT ["/usr/local/bin/medrouter"]

@@ -1,7 +1,7 @@
 # Minimal CubeStack CRDs for the KinD workflow.
 #
 # The real CubeStack CRDs carry a full schema. These fixtures keep only the
-# fields CubeFace reads (x-kubernetes-preserve-unknown-fields covers spec and
+# fields MedRouter reads (x-kubernetes-preserve-unknown-fields covers spec and
 # status) and deliberately omit the status subresource so the objects in
 # model-catalog-fixtures.yaml can set status.usedBy and status.conditions
 # directly. All resources are cluster-scoped, exactly like CubeStack.

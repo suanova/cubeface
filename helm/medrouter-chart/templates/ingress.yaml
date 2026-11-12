@@ -1,13 +1,13 @@
 {{- if .Values.ingress.enabled }}
-{{- $fullname := include "cubeface.fullname" . -}}
-{{- $path := include "cubeface.ingressPath" . -}}
+{{- $fullname := include "medrouter.fullname" . -}}
+{{- $path := include "medrouter.ingressPath" . -}}
 {{- $port := .Values.service.port -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $fullname }}
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -22,7 +22,7 @@ spec:
       http:
         paths:
           # No rewrite: BASE_PATH is part of the application's own routes, so
-          # /cubeface/api/... must reach the app unchanged.
+          # /medrouter/api/... must reach the app unchanged.
           - path: {{ $path }}
             pathType: Prefix
             backend:

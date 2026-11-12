@@ -1,21 +1,21 @@
-{{- include "cubeface.validate" . -}}
+{{- include "medrouter.validate" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "cubeface.fullname" . }}-config
+  name: {{ include "medrouter.fullname" . }}-config
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
 data:
   APP_ENV: "production"
   SYSTEM_NAME: {{ .Values.config.SYSTEM_NAME | quote }}
   PORT: {{ .Values.config.PORT | quote }}
-  BASE_PATH: {{ include "cubeface.basePath" . | quote }}
-  PUBLIC_ORIGIN: {{ include "cubeface.publicOrigin" . | quote }}
+  BASE_PATH: {{ include "medrouter.basePath" . | quote }}
+  PUBLIC_ORIGIN: {{ include "medrouter.publicOrigin" . | quote }}
   REGISTER_ENABLED: {{ .Values.config.REGISTER_ENABLED | quote }}
   EMAIL_VERIFICATION_ENABLED: {{ .Values.config.EMAIL_VERIFICATION_ENABLED | quote }}
   EMAIL_DEBUG_MODE: {{ .Values.config.EMAIL_DEBUG_MODE | quote }}
   ALLOW_EMAIL_DEBUG_IN_PRODUCTION: {{ .Values.config.ALLOW_EMAIL_DEBUG_IN_PRODUCTION | quote }}
-  SESSION_COOKIE_SECURE: {{ include "cubeface.sessionCookieSecure" . | quote }}
+  SESSION_COOKIE_SECURE: {{ include "medrouter.sessionCookieSecure" . | quote }}
   SESSION_TTL_DAYS: {{ .Values.config.SESSION_TTL_DAYS | quote }}
   SESSION_TOUCH_INTERVAL_SECONDS: {{ .Values.config.SESSION_TOUCH_INTERVAL_SECONDS | quote }}
   TRUSTED_PROXIES: {{ .Values.config.TRUSTED_PROXIES | quote }}
@@ -39,7 +39,7 @@ data:
   DATASET_LIBRARY_CACHE_TTL_SECONDS: {{ .Values.datasetLibrary.cacheTTLSeconds | quote }}
   DATASET_LIBRARY_REQUEST_TIMEOUT_SECONDS: {{ .Values.datasetLibrary.requestTimeoutSeconds | quote }}
   {{- if eq (toString (default "postgres" .Values.database.mode)) "sqlite" }}
-  SQLITE_PATH: "/data/cubeface.db"
+  SQLITE_PATH: "/data/medrouter.db"
   {{- end }}
   {{- range $key, $value := .Values.config.extra }}
   {{ $key }}: {{ $value | quote }}

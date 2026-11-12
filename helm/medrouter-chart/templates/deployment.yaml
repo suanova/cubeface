@@ -1,10 +1,10 @@
-{{- $fullname := include "cubeface.fullname" . -}}
-{{- $secretName := include "cubeface.secretName" . -}}
+{{- $fullname := include "medrouter.fullname" . -}}
+{{- $secretName := include "medrouter.secretName" . -}}
 {{- $mode := toString (default "postgres" .Values.database.mode) -}}
 {{- $replicas := int (default 1 .Values.replicaCount) -}}
 {{- $isSQLite := eq $mode "sqlite" -}}
 {{- $isManaged := eq $mode "postgres" -}}
-{{- $dsnSecretName := ternary (include "cubeface.postgresDSNSecretName" .) $secretName $isManaged -}}
+{{- $dsnSecretName := ternary (include "medrouter.postgresDSNSecretName" .) $secretName $isManaged -}}
 {{- $waitForPostgres := and (not $isSQLite) (ternary .Values.database.postgres.waitForPostgres .Values.database.external.waitForPostgres $isManaged) -}}
 {{- $waitImage := ternary .Values.database.postgres.image .Values.database.external.waitImage $isManaged -}}
 apiVersion: apps/v1
@@ -12,13 +12,13 @@ kind: Deployment
 metadata:
   name: {{ $fullname }}
   labels:
-    {{- include "cubeface.labels" . | nindent 4 }}
+    {{- include "medrouter.labels" . | nindent 4 }}
 spec:
   replicas: {{ $replicas }}
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 6 }}
+      {{- include "medrouter.selectorLabels" (dict "root" . "component" "app") | nindent 6 }}
   strategy:
     {{- if $isSQLite }}
     # The SQLite file lives on a ReadWriteOnce volume: the old pod must release
@@ -33,7 +33,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 8 }}
+        {{- include "medrouter.selectorLabels" (dict "root" . "component" "app") | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -46,7 +46,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with (include "cubeface.serviceAccountName" .) }}
+      {{- with (include "medrouter.serviceAccountName" .) }}
       serviceAccountName: {{ . | quote }}
       {{- end }}
       {{- if or .Values.modelLibrary.enabled .Values.datasetLibrary.enabled }}
@@ -62,7 +62,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    {{- include "cubeface.selectorLabels" (dict "root" . "component" "app") | nindent 20 }}
+                    {{- include "medrouter.selectorLabels" (dict "root" . "component" "app") | nindent 20 }}
                 topologyKey: kubernetes.io/hostname
       {{- end }}
       {{- with .Values.podSecurityContext }}
@@ -103,7 +103,7 @@ spec:
               memory: 128Mi
       {{- end }}
       containers:
-        - name: cubeface
+        - name: medrouter
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.command }}
@@ -179,21 +179,21 @@ spec:
           {{- end }}
           startupProbe:
             httpGet:
-              path: {{ include "cubeface.probePath" . | quote }}
+              path: {{ include "medrouter.probePath" . | quote }}
               port: http
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 60
           readinessProbe:
             httpGet:
-              path: {{ include "cubeface.probePath" . | quote }}
+              path: {{ include "medrouter.probePath" . | quote }}
               port: http
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: {{ include "cubeface.probePath" . | quote }}
+              path: {{ include "medrouter.probePath" . | quote }}
               port: http
             periodSeconds: 20
             timeoutSeconds: 3
@@ -211,7 +211,7 @@ spec:
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (include "cubeface.pvcName" .) }}
+            claimName: {{ .Values.persistence.existingClaim | default (include "medrouter.pvcName" .) }}
           {{- else }}
           emptyDir: {}
           {{- end }}
